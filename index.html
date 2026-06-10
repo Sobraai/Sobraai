@@ -4,124 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>SobraAí</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-// ── FIXOS ──
-function abreFixo(editId){
-  S.fixoEditId=editId||null;
-  S.fixoMesRef=S.mes+1;
-  S.fixoAnoRef=S.ano;
-  renderFixoCartSel(null);
-  if(editId){
-    // Busca no fixo original (não na versão editada do mês)
-    const f=S.fixos.find(x=>x.id===editId)||S.fixos.find(x=>{
-      const fm=fixosDoMes(S.mes,S.ano);
-      const fx=fm.find(ff=>ff.id===x.id&&ff._excId);
-      return fx;
-    });
-    const fReal=S.fixos.find(x=>x.id===editId);
-    if(!fReal)return;
-    // Pega valores do mês (pode ser exceção editada)
-    const excEdit=S.excecoes.find(e=>e.fixo_id===editId&&e.mes===S.mes+1&&e.ano===S.ano&&e.tipo==='editado');
-    $('sh-fixo-tit').textContent='Editar fixo';
-    setFixoTipo(fReal.tipo);
-    $('f-desc').value=excEdit?excEdit.descricao:fReal.descricao;
-    $('f-val').value=excEdit?excEdit.valor:fReal.valor;
-    $('f-dia').value=fReal.dia;
-    renderFixoCartSel(excEdit?excEdit.carteira_id:fReal.carteira_id);
-    if(fReal.parcelas){setFixoRep('parcelado');$('f-parcelas').value=fReal.parcelas;}
-    else{setFixoRep('fixo');}
-    $('btn-del-fixo').style.display='block';
-    $('fixo-escopo').style.display='block';
-  } else {
-    $('sh-fixo-tit').textContent='Novo fixo / parcelado';
-    setFixoTipo('saida');setFixoRep('fixo');
-    $('f-desc').value='';$('f-val').value='';$('f-dia').value='';$('f-parcelas').value='';
-    $('btn-del-fixo').style.display='none';
-    $('fixo-escopo').style.display='none';
-  }
-  $('sh-fixo').classList.add('aberto');
-}
-
-function renderFixoCartSel(selId){
-  $('f-cart').innerHTML=S.carteiras.map(c=>`<option value="${c.id}"${c.id===selId?' selected':''}>${c.emoji} ${c.nome}</option>`).join('');
-}
-
-function setFixoTipo(t){
-  S.fixoTipo=t;
-  $('fixo-tipo-sai').className='tipo-btn sai'+(t==='saida'?' on':'');
-  $('fixo-tipo-ent').className='tipo-btn ent'+(t==='entrada'?' on':'');
-}
-
-function setFixoRep(r){
-  S.fixoRep=r;
-  $('f-tp-fixo').className='sh-radio'+(r==='fixo'?' on':'');
-  $('f-tp-parc').className='sh-radio'+(r==='parcelado'?' on':'');
-  $('f-parc-wrap').style.display=r==='parcelado'?'block':'none';
-}
-
-function fechaShFixo(){$('sh-fixo').classList.remove('aberto');}
-
-async function salvaFixo(){
-  const desc=$('f-desc').value.trim();
-  const val=parseFloat($('f-val').value);
-  const dia=parseInt($('f-dia').value);
-  const cartId=$('f-cart').value;
-  if(!desc||!val||!dia)return alert('Preencha todos os campos.');
-  const parcelas=S.fixoRep==='parcelado'?parseInt($('f-parcelas').value)||null:null;
-  if(S.fixoRep==='parcelado'&&!parcelas)return alert('Informe o número de parcelas.');
-
-  if(!S.fixoEditId){
-    // Novo fixo
-    await db.from('fixos').insert({
-      user_id:S.user.id,descricao:desc,valor:val,tipo:S.fixoTipo,
-      dia,carteira_id:cartId,parcelas,
-      mes_inicio:S.mes+1,ano_inicio:S.ano,ativo:true,
-    });
-  } else {
-    const escopo=$('f-escopo').value;
-    if(escopo==='todos'){
-      await db.from('fixos').update({descricao:desc,valor:val,carteira_id:cartId}).eq('id',S.fixoEditId);
-    } else if(escopo==='frente'){
-      await db.from('fixos').update({mes_fim:S.fixoMesRef,ano_fim:S.fixoAnoRef}).eq('id',S.fixoEditId);
-      await db.from('fixos').insert({
-        user_id:S.user.id,descricao:desc,valor:val,tipo:S.fixoTipo,
-        dia,carteira_id:cartId,parcelas,
-        mes_inicio:S.fixoMesRef,ano_inicio:S.fixoAnoRef,ativo:true,
-      });
-    } else {
-      // só este mês — cria/atualiza exceção editada
-      const excExist=S.excecoes.find(e=>e.fixo_id===S.fixoEditId&&e.mes===S.fixoMesRef&&e.ano===S.fixoAnoRef&&e.tipo==='editado');
-      const excDados={user_id:S.user.id,fixo_id:S.fixoEditId,mes:S.fixoMesRef,ano:S.fixoAnoRef,tipo:'editado',valor:val,descricao:desc,carteira_id:cartId};
-      if(excExist){await db.from('fixos_excecoes').update(excDados).eq('id',excExist.id);}
-      else{await db.from('fixos_excecoes').insert(excDados);}
-    }
-  }
-  await carrega();fechaShFixo();render();
-}
-
-async function delFixo(){
-  if(!S.fixoEditId)return;
-  const escopo=$('f-escopo').value;
-  if(escopo==='todos'){
-    if(!confirm('Apagar este fixo de todos os meses?'))return;
-    await db.from('fixos').update({ativo:false}).eq('id',S.fixoEditId);
-  } else if(escopo==='frente'){
-    if(!confirm('Apagar deste mês em diante?'))return;
-    await db.from('fixos').update({mes_fim:S.fixoMesRef,ano_fim:S.fixoAnoRef}).eq('id',S.fixoEditId);
-  } else {
-    if(!confirm('Apagar só este mês?'))return;
-    const excDados={user_id:S.user.id,fixo_id:S.fixoEditId,mes:S.fixoMesRef,ano:S.fixoAnoRef,tipo:'apagado'};
-    await db.from('fixos_excecoes').insert(excDados);
-  }
-  await carrega();fechaShFixo();render();
-}
-
-function tlToggle(d){
-  const el=document.getElementById('tl-itens-'+d);
-  if(!el)return;
-  el.style.display=el.style.display==='none'?'block':'none';
-}
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
 :root{
@@ -189,7 +72,7 @@ input,select{outline:none;font-family:inherit;}
 .msub{font-size:10px;color:var(--ts);text-transform:uppercase;letter-spacing:.06em;}
 
 /* CONTEÚDO */
-.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(80px + var(--sb));padding:16px 14px calc(80px + var(--sb));}
+.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 14px calc(140px + var(--sb));}
 
 /* TIMELINE */
 .tl-row{display:flex;gap:12px;margin-bottom:2px;}
@@ -200,7 +83,7 @@ input,select{outline:none;font-family:inherit;}
 .tl-dot.hj{background:var(--v);box-shadow:0 0 0 3px rgba(34,197,94,.25);}
 .tl-seg{width:1.5px;flex:1;background:var(--bd);min-height:12px;margin-top:3px;}
 .tl-body{flex:1;padding-bottom:12px;}
-.tl-hdr{display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:2px 0;}
+.tl-hdr{display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:6px 0;min-height:44px;}
 .tl-data{font-size:13px;font-weight:500;color:#fff;}
 .tl-data.vazio{font-size:12px;color:var(--ts);}
 .tl-data.neg{color:var(--r);}
@@ -602,9 +485,9 @@ function render(){
     const diaNome=DIAS[new Date(a,m,d).getDay()];
     const isUltimo=d===dias;
 
-    // Dias sem lançamento: mostrar só se for hoje ou futuro
+    // Dias sem lançamento: sempre mostrar
     if(!temItem){
-      if(!isFutD&&!isHj)continue;
+      if(false)continue; // mostra todos
       h+=`<div class="tl-row">
         <div class="tl-line">
           <div class="tl-dot vazio"></div>
@@ -639,7 +522,7 @@ function render(){
       const cart=S.carteiras.find(c=>c.id===f.carteira_id);
       const mesesDesde=(a-f.ano_inicio)*12+(m+1-f.mes_inicio);
       const tag=f.parcelas?`${mesesDesde+1}/${f.parcelas}`:'fixo';
-      h+=`<div class="tl-item" onclick="abreFixo('${f.id}')">
+      h+=`<div class="tl-item" onclick="event.stopPropagation();abreFixo('${f.id}')">
         <div class="tl-item-info">
           <div class="tl-item-nome">${f.descricao} <span class="tl-tag">${tag}</span></div>
           ${cart?`<div class="tl-item-sub">${cart.emoji} ${cart.nome}</div>`:''}
@@ -651,7 +534,7 @@ function render(){
     dLancs.forEach(l=>{
       const isEnt=l.tipo==='entrada';
       const cart=S.carteiras.find(c=>c.id===l.carteira_id);
-      h+=`<div class="tl-item" onclick="abreLanc(${d},'${l.id}')">
+      h+=`<div class="tl-item" onclick="event.stopPropagation();abreLanc(${d},'${l.id}')">
         <div class="tl-item-info">
           <div class="tl-item-nome">${l.descricao}</div>
           ${cart?`<div class="tl-item-sub">${cart.emoji} ${cart.nome}</div>`:''}
@@ -849,6 +732,123 @@ async function delFixo(){
     await db.from('fixos_excecoes').insert(excDados);
   }
   await carrega();fechaShFixo();render();
+}
+
+// ── FIXOS ──
+function abreFixo(editId){
+  S.fixoEditId=editId||null;
+  S.fixoMesRef=S.mes+1;
+  S.fixoAnoRef=S.ano;
+  renderFixoCartSel(null);
+  if(editId){
+    // Busca no fixo original (não na versão editada do mês)
+    const f=S.fixos.find(x=>x.id===editId)||S.fixos.find(x=>{
+      const fm=fixosDoMes(S.mes,S.ano);
+      const fx=fm.find(ff=>ff.id===x.id&&ff._excId);
+      return fx;
+    });
+    const fReal=S.fixos.find(x=>x.id===editId);
+    if(!fReal)return;
+    // Pega valores do mês (pode ser exceção editada)
+    const excEdit=S.excecoes.find(e=>e.fixo_id===editId&&e.mes===S.mes+1&&e.ano===S.ano&&e.tipo==='editado');
+    $('sh-fixo-tit').textContent='Editar fixo';
+    setFixoTipo(fReal.tipo);
+    $('f-desc').value=excEdit?excEdit.descricao:fReal.descricao;
+    $('f-val').value=excEdit?excEdit.valor:fReal.valor;
+    $('f-dia').value=fReal.dia;
+    renderFixoCartSel(excEdit?excEdit.carteira_id:fReal.carteira_id);
+    if(fReal.parcelas){setFixoRep('parcelado');$('f-parcelas').value=fReal.parcelas;}
+    else{setFixoRep('fixo');}
+    $('btn-del-fixo').style.display='block';
+    $('fixo-escopo').style.display='block';
+  } else {
+    $('sh-fixo-tit').textContent='Novo fixo / parcelado';
+    setFixoTipo('saida');setFixoRep('fixo');
+    $('f-desc').value='';$('f-val').value='';$('f-dia').value='';$('f-parcelas').value='';
+    $('btn-del-fixo').style.display='none';
+    $('fixo-escopo').style.display='none';
+  }
+  $('sh-fixo').classList.add('aberto');
+}
+
+function renderFixoCartSel(selId){
+  $('f-cart').innerHTML=S.carteiras.map(c=>`<option value="${c.id}"${c.id===selId?' selected':''}>${c.emoji} ${c.nome}</option>`).join('');
+}
+
+function setFixoTipo(t){
+  S.fixoTipo=t;
+  $('fixo-tipo-sai').className='tipo-btn sai'+(t==='saida'?' on':'');
+  $('fixo-tipo-ent').className='tipo-btn ent'+(t==='entrada'?' on':'');
+}
+
+function setFixoRep(r){
+  S.fixoRep=r;
+  $('f-tp-fixo').className='sh-radio'+(r==='fixo'?' on':'');
+  $('f-tp-parc').className='sh-radio'+(r==='parcelado'?' on':'');
+  $('f-parc-wrap').style.display=r==='parcelado'?'block':'none';
+}
+
+function fechaShFixo(){$('sh-fixo').classList.remove('aberto');}
+
+async function salvaFixo(){
+  const desc=$('f-desc').value.trim();
+  const val=parseFloat($('f-val').value);
+  const dia=parseInt($('f-dia').value);
+  const cartId=$('f-cart').value;
+  if(!desc||!val||!dia)return alert('Preencha todos os campos.');
+  const parcelas=S.fixoRep==='parcelado'?parseInt($('f-parcelas').value)||null:null;
+  if(S.fixoRep==='parcelado'&&!parcelas)return alert('Informe o número de parcelas.');
+
+  if(!S.fixoEditId){
+    // Novo fixo
+    await db.from('fixos').insert({
+      user_id:S.user.id,descricao:desc,valor:val,tipo:S.fixoTipo,
+      dia,carteira_id:cartId,parcelas,
+      mes_inicio:S.mes+1,ano_inicio:S.ano,ativo:true,
+    });
+  } else {
+    const escopo=$('f-escopo').value;
+    if(escopo==='todos'){
+      await db.from('fixos').update({descricao:desc,valor:val,carteira_id:cartId}).eq('id',S.fixoEditId);
+    } else if(escopo==='frente'){
+      await db.from('fixos').update({mes_fim:S.fixoMesRef,ano_fim:S.fixoAnoRef}).eq('id',S.fixoEditId);
+      await db.from('fixos').insert({
+        user_id:S.user.id,descricao:desc,valor:val,tipo:S.fixoTipo,
+        dia,carteira_id:cartId,parcelas,
+        mes_inicio:S.fixoMesRef,ano_inicio:S.fixoAnoRef,ativo:true,
+      });
+    } else {
+      // só este mês — cria/atualiza exceção editada
+      const excExist=S.excecoes.find(e=>e.fixo_id===S.fixoEditId&&e.mes===S.fixoMesRef&&e.ano===S.fixoAnoRef&&e.tipo==='editado');
+      const excDados={user_id:S.user.id,fixo_id:S.fixoEditId,mes:S.fixoMesRef,ano:S.fixoAnoRef,tipo:'editado',valor:val,descricao:desc,carteira_id:cartId};
+      if(excExist){await db.from('fixos_excecoes').update(excDados).eq('id',excExist.id);}
+      else{await db.from('fixos_excecoes').insert(excDados);}
+    }
+  }
+  await carrega();fechaShFixo();render();
+}
+
+async function delFixo(){
+  if(!S.fixoEditId)return;
+  const escopo=$('f-escopo').value;
+  if(escopo==='todos'){
+    if(!confirm('Apagar este fixo de todos os meses?'))return;
+    await db.from('fixos').update({ativo:false}).eq('id',S.fixoEditId);
+  } else if(escopo==='frente'){
+    if(!confirm('Apagar deste mês em diante?'))return;
+    await db.from('fixos').update({mes_fim:S.fixoMesRef,ano_fim:S.fixoAnoRef}).eq('id',S.fixoEditId);
+  } else {
+    if(!confirm('Apagar só este mês?'))return;
+    const excDados={user_id:S.user.id,fixo_id:S.fixoEditId,mes:S.fixoMesRef,ano:S.fixoAnoRef,tipo:'apagado'};
+    await db.from('fixos_excecoes').insert(excDados);
+  }
+  await carrega();fechaShFixo();render();
+}
+
+function tlToggle(d){
+  const el=document.getElementById('tl-itens-'+d);
+  if(!el)return;
+  el.style.display=el.style.display==='none'?'block':'none';
 }
 </script>
 
