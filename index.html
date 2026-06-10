@@ -442,12 +442,27 @@ function saldoDia(d,m,a){
     return ord<=limOrd;
   });
   const deltaLancs=lancsAte.reduce((s,l)=>s+(l.tipo==='entrada'?1:-1)*parseFloat(l.valor),0);
-  // Fixos até esta data
+  // Fixos: iterar mês a mês respeitando exceções e mes_fim
   let deltaFixos=0;
+  // Determinar mês/ano de início mínimo entre todos os fixos
+  let mIter=null,aIter=null;
   S.fixos.forEach(f=>{
-    const ocorrs=fixoOcorrencias(f,m,a,d);
-    ocorrs.forEach(()=>{deltaFixos+=(f.tipo==='entrada'?1:-1)*parseFloat(f.valor);});
+    const fm=f.mes_inicio-1,fa=f.ano_inicio;
+    if(mIter===null||(fa<aIter||(fa===aIter&&fm<mIter))){mIter=fm;aIter=fa;}
   });
+  if(mIter===null)return base+deltaLancs;
+  // Iterar cada mês desde o início até a data alvo
+  let im=mIter,ia=aIter;
+  while(ia<a||(ia===a&&im<=m)){
+    const limDia=ia===a&&im===m?d:new Date(ia,im+1,0).getDate();
+    const fixesDesseMes=fixosDoMes(im,ia);
+    fixesDesseMes.forEach(f=>{
+      if(f.dia<=limDia){
+        deltaFixos+=(f.tipo==='entrada'?1:-1)*parseFloat(f.valor);
+      }
+    });
+    im++;if(im>11){im=0;ia++;}
+  }
   return base+deltaLancs+deltaFixos;
 }
 
@@ -679,7 +694,25 @@ function setFixoRep(r){
 
 function fechaShFixo(){$('sh-fixo').classList.remove('aberto');}
 
-async function salvaFixo(){
+let _escopoAcao=null;
+
+function pedirEscopoFixo(acao){
+  // Se é novo fixo, salva direto sem perguntar
+  if(!S.fixoEditId&&acao==='salvar'){salvaFixoEscopo('todos');return;}
+  _escopoAcao=acao;
+  $('modal-escopo-tit').textContent=acao==='apagar'?'Apagar de quais meses?':'Salvar em quais meses?';
+  $('modal-escopo').classList.add('aberto');
+}
+
+function fechaModalEscopo(){$('modal-escopo').classList.remove('aberto');}
+
+function confirmaEscopoFixo(escopo){
+  fechaModalEscopo();
+  if(_escopoAcao==='salvar') salvaFixoEscopo(escopo);
+  else apagarFixoEscopo(escopo);
+}
+
+async function salvaFixoEscopo(escopo){
   const desc=$('f-desc').value.trim();
   const val=parseFloat($('f-val').value);
   const dia=parseInt($('f-dia').value);
@@ -687,52 +720,46 @@ async function salvaFixo(){
   if(!desc||!val||!dia)return alert('Preencha todos os campos.');
   const parcelas=S.fixoRep==='parcelado'?parseInt($('f-parcelas').value)||null:null;
   if(S.fixoRep==='parcelado'&&!parcelas)return alert('Informe o número de parcelas.');
-
   if(!S.fixoEditId){
-    // Novo fixo
     await db.from('fixos').insert({
       user_id:S.user.id,descricao:desc,valor:val,tipo:S.fixoTipo,
       dia,carteira_id:cartId,parcelas,
       mes_inicio:S.mes+1,ano_inicio:S.ano,ativo:true,
     });
+  } else if(escopo==='todos'){
+    await db.from('fixos').update({descricao:desc,valor:val,carteira_id:cartId}).eq('id',S.fixoEditId);
+  } else if(escopo==='frente'){
+    await db.from('fixos').update({mes_fim:S.fixoMesRef,ano_fim:S.fixoAnoRef}).eq('id',S.fixoEditId);
+    await db.from('fixos').insert({
+      user_id:S.user.id,descricao:desc,valor:val,tipo:S.fixoTipo,
+      dia,carteira_id:cartId,parcelas,
+      mes_inicio:S.fixoMesRef,ano_inicio:S.fixoAnoRef,ativo:true,
+    });
   } else {
-    const escopo=$('f-escopo').value;
-    if(escopo==='todos'){
-      await db.from('fixos').update({descricao:desc,valor:val,carteira_id:cartId}).eq('id',S.fixoEditId);
-    } else if(escopo==='frente'){
-      await db.from('fixos').update({mes_fim:S.fixoMesRef,ano_fim:S.fixoAnoRef}).eq('id',S.fixoEditId);
-      await db.from('fixos').insert({
-        user_id:S.user.id,descricao:desc,valor:val,tipo:S.fixoTipo,
-        dia,carteira_id:cartId,parcelas,
-        mes_inicio:S.fixoMesRef,ano_inicio:S.fixoAnoRef,ativo:true,
-      });
-    } else {
-      // só este mês — cria/atualiza exceção editada
-      const excExist=S.excecoes.find(e=>e.fixo_id===S.fixoEditId&&e.mes===S.fixoMesRef&&e.ano===S.fixoAnoRef&&e.tipo==='editado');
-      const excDados={user_id:S.user.id,fixo_id:S.fixoEditId,mes:S.fixoMesRef,ano:S.fixoAnoRef,tipo:'editado',valor:val,descricao:desc,carteira_id:cartId};
-      if(excExist){await db.from('fixos_excecoes').update(excDados).eq('id',excExist.id);}
-      else{await db.from('fixos_excecoes').insert(excDados);}
-    }
+    const excExist=S.excecoes.find(e=>e.fixo_id===S.fixoEditId&&e.mes===S.fixoMesRef&&e.ano===S.fixoAnoRef&&e.tipo==='editado');
+    const excDados={user_id:S.user.id,fixo_id:S.fixoEditId,mes:S.fixoMesRef,ano:S.fixoAnoRef,tipo:'editado',valor:val,descricao:desc,carteira_id:cartId};
+    if(excExist){await db.from('fixos_excecoes').update(excDados).eq('id',excExist.id);}
+    else{await db.from('fixos_excecoes').insert(excDados);}
   }
   await carrega();fechaShFixo();render();
 }
 
-async function delFixo(){
+async function apagarFixoEscopo(escopo){
   if(!S.fixoEditId)return;
-  const escopo=$('f-escopo').value;
   if(escopo==='todos'){
-    if(!confirm('Apagar este fixo de todos os meses?'))return;
     await db.from('fixos').update({ativo:false}).eq('id',S.fixoEditId);
   } else if(escopo==='frente'){
-    if(!confirm('Apagar deste mês em diante?'))return;
     await db.from('fixos').update({mes_fim:S.fixoMesRef,ano_fim:S.fixoAnoRef}).eq('id',S.fixoEditId);
   } else {
-    if(!confirm('Apagar só este mês?'))return;
     const excDados={user_id:S.user.id,fixo_id:S.fixoEditId,mes:S.fixoMesRef,ano:S.fixoAnoRef,tipo:'apagado'};
     await db.from('fixos_excecoes').insert(excDados);
   }
   await carrega();fechaShFixo();render();
 }
+
+// aliases para compatibilidade
+async function salvaFixo(){pedirEscopoFixo('salvar');}
+async function delFixo(){pedirEscopoFixo('apagar');}
 
 // ── FIXOS ──
 function abreFixo(editId){
@@ -790,7 +817,25 @@ function setFixoRep(r){
 
 function fechaShFixo(){$('sh-fixo').classList.remove('aberto');}
 
-async function salvaFixo(){
+let _escopoAcao=null;
+
+function pedirEscopoFixo(acao){
+  // Se é novo fixo, salva direto sem perguntar
+  if(!S.fixoEditId&&acao==='salvar'){salvaFixoEscopo('todos');return;}
+  _escopoAcao=acao;
+  $('modal-escopo-tit').textContent=acao==='apagar'?'Apagar de quais meses?':'Salvar em quais meses?';
+  $('modal-escopo').classList.add('aberto');
+}
+
+function fechaModalEscopo(){$('modal-escopo').classList.remove('aberto');}
+
+function confirmaEscopoFixo(escopo){
+  fechaModalEscopo();
+  if(_escopoAcao==='salvar') salvaFixoEscopo(escopo);
+  else apagarFixoEscopo(escopo);
+}
+
+async function salvaFixoEscopo(escopo){
   const desc=$('f-desc').value.trim();
   const val=parseFloat($('f-val').value);
   const dia=parseInt($('f-dia').value);
@@ -798,52 +843,46 @@ async function salvaFixo(){
   if(!desc||!val||!dia)return alert('Preencha todos os campos.');
   const parcelas=S.fixoRep==='parcelado'?parseInt($('f-parcelas').value)||null:null;
   if(S.fixoRep==='parcelado'&&!parcelas)return alert('Informe o número de parcelas.');
-
   if(!S.fixoEditId){
-    // Novo fixo
     await db.from('fixos').insert({
       user_id:S.user.id,descricao:desc,valor:val,tipo:S.fixoTipo,
       dia,carteira_id:cartId,parcelas,
       mes_inicio:S.mes+1,ano_inicio:S.ano,ativo:true,
     });
+  } else if(escopo==='todos'){
+    await db.from('fixos').update({descricao:desc,valor:val,carteira_id:cartId}).eq('id',S.fixoEditId);
+  } else if(escopo==='frente'){
+    await db.from('fixos').update({mes_fim:S.fixoMesRef,ano_fim:S.fixoAnoRef}).eq('id',S.fixoEditId);
+    await db.from('fixos').insert({
+      user_id:S.user.id,descricao:desc,valor:val,tipo:S.fixoTipo,
+      dia,carteira_id:cartId,parcelas,
+      mes_inicio:S.fixoMesRef,ano_inicio:S.fixoAnoRef,ativo:true,
+    });
   } else {
-    const escopo=$('f-escopo').value;
-    if(escopo==='todos'){
-      await db.from('fixos').update({descricao:desc,valor:val,carteira_id:cartId}).eq('id',S.fixoEditId);
-    } else if(escopo==='frente'){
-      await db.from('fixos').update({mes_fim:S.fixoMesRef,ano_fim:S.fixoAnoRef}).eq('id',S.fixoEditId);
-      await db.from('fixos').insert({
-        user_id:S.user.id,descricao:desc,valor:val,tipo:S.fixoTipo,
-        dia,carteira_id:cartId,parcelas,
-        mes_inicio:S.fixoMesRef,ano_inicio:S.fixoAnoRef,ativo:true,
-      });
-    } else {
-      // só este mês — cria/atualiza exceção editada
-      const excExist=S.excecoes.find(e=>e.fixo_id===S.fixoEditId&&e.mes===S.fixoMesRef&&e.ano===S.fixoAnoRef&&e.tipo==='editado');
-      const excDados={user_id:S.user.id,fixo_id:S.fixoEditId,mes:S.fixoMesRef,ano:S.fixoAnoRef,tipo:'editado',valor:val,descricao:desc,carteira_id:cartId};
-      if(excExist){await db.from('fixos_excecoes').update(excDados).eq('id',excExist.id);}
-      else{await db.from('fixos_excecoes').insert(excDados);}
-    }
+    const excExist=S.excecoes.find(e=>e.fixo_id===S.fixoEditId&&e.mes===S.fixoMesRef&&e.ano===S.fixoAnoRef&&e.tipo==='editado');
+    const excDados={user_id:S.user.id,fixo_id:S.fixoEditId,mes:S.fixoMesRef,ano:S.fixoAnoRef,tipo:'editado',valor:val,descricao:desc,carteira_id:cartId};
+    if(excExist){await db.from('fixos_excecoes').update(excDados).eq('id',excExist.id);}
+    else{await db.from('fixos_excecoes').insert(excDados);}
   }
   await carrega();fechaShFixo();render();
 }
 
-async function delFixo(){
+async function apagarFixoEscopo(escopo){
   if(!S.fixoEditId)return;
-  const escopo=$('f-escopo').value;
   if(escopo==='todos'){
-    if(!confirm('Apagar este fixo de todos os meses?'))return;
     await db.from('fixos').update({ativo:false}).eq('id',S.fixoEditId);
   } else if(escopo==='frente'){
-    if(!confirm('Apagar deste mês em diante?'))return;
     await db.from('fixos').update({mes_fim:S.fixoMesRef,ano_fim:S.fixoAnoRef}).eq('id',S.fixoEditId);
   } else {
-    if(!confirm('Apagar só este mês?'))return;
     const excDados={user_id:S.user.id,fixo_id:S.fixoEditId,mes:S.fixoMesRef,ano:S.fixoAnoRef,tipo:'apagado'};
     await db.from('fixos_excecoes').insert(excDados);
   }
   await carrega();fechaShFixo();render();
 }
+
+// aliases para compatibilidade
+async function salvaFixo(){pedirEscopoFixo('salvar');}
+async function delFixo(){pedirEscopoFixo('apagar');}
 
 function tlToggle(d){
   const el=document.getElementById('tl-itens-'+d);
@@ -878,19 +917,33 @@ function tlToggle(d){
       <div class="sh-lbl">Número de parcelas</div>
       <input class="sh-inp" type="number" id="f-parcelas" placeholder="Ex: 12" min="1" inputmode="numeric"/>
     </div>
-    <div id="fixo-escopo" style="display:none;">
-      <div class="sh-lbl">Alterar / Apagar</div>
-      <select class="sh-sel" id="f-escopo">
-        <option value="mes">Só este mês</option>
-        <option value="frente">Daqui pra frente</option>
-        <option value="todos">Todos os meses</option>
-      </select>
-    </div>
     <div class="sh-actions">
       <button class="btn-canc" onclick="fechaShFixo()">Cancelar</button>
-      <button class="btn-salv" onclick="salvaFixo()">Salvar</button>
+      <button class="btn-salv" id="btn-salv-fixo" onclick="pedirEscopoFixo('salvar')">Salvar</button>
     </div>
-    <button class="btn-del" id="btn-del-fixo" style="display:none;" onclick="delFixo()">Apagar</button>
+    <button class="btn-del" id="btn-del-fixo" style="display:none;" onclick="pedirEscopoFixo('apagar')">Apagar</button>
+  </div>
+</div>
+
+<!-- MODAL ESCOPO FIXO -->
+<div class="ov" id="modal-escopo">
+  <div class="sheet" style="padding-bottom:calc(24px + var(--sb));">
+    <div class="sh-handle"></div>
+    <div class="sh-tit" id="modal-escopo-tit">Aplicar a quais meses?</div>
+    <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px;">
+      <button onclick="confirmaEscopoFixo('mes')" style="padding:14px;border-radius:12px;background:var(--bg3);color:var(--tm);font-size:14px;font-weight:600;border:1px solid var(--bd);text-align:left;">
+        📅 Só este mês
+      </button>
+      <button onclick="confirmaEscopoFixo('frente')" style="padding:14px;border-radius:12px;background:var(--bg3);color:var(--tm);font-size:14px;font-weight:600;border:1px solid var(--bd);text-align:left;">
+        ➡️ Daqui pra frente
+      </button>
+      <button onclick="confirmaEscopoFixo('todos')" style="padding:14px;border-radius:12px;background:var(--bg3);color:var(--tm);font-size:14px;font-weight:600;border:1px solid var(--bd);text-align:left;">
+        🔁 Todos os meses
+      </button>
+      <button onclick="fechaModalEscopo()" style="padding:14px;border-radius:12px;background:transparent;color:var(--ts);font-size:14px;font-weight:600;border:none;margin-top:4px;">
+        Cancelar
+      </button>
+    </div>
   </div>
 </div>
 </body>
