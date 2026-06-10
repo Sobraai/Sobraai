@@ -8,29 +8,36 @@
 // ── FIXOS ──
 function abreFixo(editId){
   S.fixoEditId=editId||null;
+  S.fixoMesRef=S.mes+1;
+  S.fixoAnoRef=S.ano;
   renderFixoCartSel(null);
   if(editId){
-    const f=S.fixos.find(x=>x.id===editId);
-    if(!f)return;
+    // Busca no fixo original (não na versão editada do mês)
+    const f=S.fixos.find(x=>x.id===editId)||S.fixos.find(x=>{
+      const fm=fixosDoMes(S.mes,S.ano);
+      const fx=fm.find(ff=>ff.id===x.id&&ff._excId);
+      return fx;
+    });
+    const fReal=S.fixos.find(x=>x.id===editId);
+    if(!fReal)return;
+    // Pega valores do mês (pode ser exceção editada)
+    const excEdit=S.excecoes.find(e=>e.fixo_id===editId&&e.mes===S.mes+1&&e.ano===S.ano&&e.tipo==='editado');
     $('sh-fixo-tit').textContent='Editar fixo';
-    setFixoTipo(f.tipo);
-    $('f-desc').value=f.descricao;
-    $('f-val').value=f.valor;
-    $('f-dia').value=f.dia;
-    renderFixoCartSel(f.carteira_id);
-    if(f.parcelas){
-      setFixoRep('parcelado');
-      $('f-parcelas').value=f.parcelas;
-    } else {
-      setFixoRep('fixo');
-    }
+    setFixoTipo(fReal.tipo);
+    $('f-desc').value=excEdit?excEdit.descricao:fReal.descricao;
+    $('f-val').value=excEdit?excEdit.valor:fReal.valor;
+    $('f-dia').value=fReal.dia;
+    renderFixoCartSel(excEdit?excEdit.carteira_id:fReal.carteira_id);
+    if(fReal.parcelas){setFixoRep('parcelado');$('f-parcelas').value=fReal.parcelas;}
+    else{setFixoRep('fixo');}
     $('btn-del-fixo').style.display='block';
+    $('fixo-escopo').style.display='block';
   } else {
     $('sh-fixo-tit').textContent='Novo fixo / parcelado';
-    setFixoTipo('saida');
-    setFixoRep('fixo');
+    setFixoTipo('saida');setFixoRep('fixo');
     $('f-desc').value='';$('f-val').value='';$('f-dia').value='';$('f-parcelas').value='';
     $('btn-del-fixo').style.display='none';
+    $('fixo-escopo').style.display='none';
   }
   $('sh-fixo').classList.add('aberto');
 }
@@ -62,23 +69,50 @@ async function salvaFixo(){
   if(!desc||!val||!dia)return alert('Preencha todos os campos.');
   const parcelas=S.fixoRep==='parcelado'?parseInt($('f-parcelas').value)||null:null;
   if(S.fixoRep==='parcelado'&&!parcelas)return alert('Informe o número de parcelas.');
-  const dados={
-    user_id:S.user.id,descricao:desc,valor:val,tipo:S.fixoTipo,
-    dia,carteira_id:cartId,parcelas,
-    mes_inicio:S.mes+1,ano_inicio:S.ano,ativo:true,
-  };
-  if(S.fixoEditId){
-    await db.from('fixos').update(dados).eq('id',S.fixoEditId);
+
+  if(!S.fixoEditId){
+    // Novo fixo
+    await db.from('fixos').insert({
+      user_id:S.user.id,descricao:desc,valor:val,tipo:S.fixoTipo,
+      dia,carteira_id:cartId,parcelas,
+      mes_inicio:S.mes+1,ano_inicio:S.ano,ativo:true,
+    });
   } else {
-    await db.from('fixos').insert(dados);
+    const escopo=$('f-escopo').value;
+    if(escopo==='todos'){
+      await db.from('fixos').update({descricao:desc,valor:val,carteira_id:cartId}).eq('id',S.fixoEditId);
+    } else if(escopo==='frente'){
+      await db.from('fixos').update({mes_fim:S.fixoMesRef,ano_fim:S.fixoAnoRef}).eq('id',S.fixoEditId);
+      await db.from('fixos').insert({
+        user_id:S.user.id,descricao:desc,valor:val,tipo:S.fixoTipo,
+        dia,carteira_id:cartId,parcelas,
+        mes_inicio:S.fixoMesRef,ano_inicio:S.fixoAnoRef,ativo:true,
+      });
+    } else {
+      // só este mês — cria/atualiza exceção editada
+      const excExist=S.excecoes.find(e=>e.fixo_id===S.fixoEditId&&e.mes===S.fixoMesRef&&e.ano===S.fixoAnoRef&&e.tipo==='editado');
+      const excDados={user_id:S.user.id,fixo_id:S.fixoEditId,mes:S.fixoMesRef,ano:S.fixoAnoRef,tipo:'editado',valor:val,descricao:desc,carteira_id:cartId};
+      if(excExist){await db.from('fixos_excecoes').update(excDados).eq('id',excExist.id);}
+      else{await db.from('fixos_excecoes').insert(excDados);}
+    }
   }
   await carrega();fechaShFixo();render();
 }
 
 async function delFixo(){
   if(!S.fixoEditId)return;
-  if(!confirm('Apagar este fixo?'))return;
-  await db.from('fixos').update({ativo:false}).eq('id',S.fixoEditId);
+  const escopo=$('f-escopo').value;
+  if(escopo==='todos'){
+    if(!confirm('Apagar este fixo de todos os meses?'))return;
+    await db.from('fixos').update({ativo:false}).eq('id',S.fixoEditId);
+  } else if(escopo==='frente'){
+    if(!confirm('Apagar deste mês em diante?'))return;
+    await db.from('fixos').update({mes_fim:S.fixoMesRef,ano_fim:S.fixoAnoRef}).eq('id',S.fixoEditId);
+  } else {
+    if(!confirm('Apagar só este mês?'))return;
+    const excDados={user_id:S.user.id,fixo_id:S.fixoEditId,mes:S.fixoMesRef,ano:S.fixoAnoRef,tipo:'apagado'};
+    await db.from('fixos_excecoes').insert(excDados);
+  }
   await carrega();fechaShFixo();render();
 }
 
@@ -344,9 +378,12 @@ const S={
   tipo:'saida',
   editId:null,
   fixos:[],
+  excecoes:[],
   fixoTipo:'saida',
   fixoRep:'fixo',
   fixoEditId:null,
+  fixoMesRef:null,
+  fixoAnoRef:null,
   // onboarding
   obBancos:[{nome:'',emoji:'🏦',saldo:''}],
 };
@@ -413,14 +450,16 @@ async function sair(){
 
 // ── CARREGA ──
 async function carrega(){
-  const[c,l,f]=await Promise.all([
+  const[c,l,f,e]=await Promise.all([
     db.from('carteiras').select('*').eq('user_id',S.user.id),
     db.from('lancamentos').select('*').eq('user_id',S.user.id),
     db.from('fixos').select('*').eq('user_id',S.user.id).eq('ativo',true),
+    db.from('fixos_excecoes').select('*').eq('user_id',S.user.id),
   ]);
   S.carteiras=c.data||[];
   S.lancs=l.data||[];
   S.fixos=f.data||[];
+  S.excecoes=e.data||[];
 }
 
 // ── ONBOARDING ──
@@ -484,16 +523,29 @@ function fixoOcorrencias(fixo,ateMes,ateAno,ateDia){
 }
 
 function fixosDoMes(m,a){
-  // Retorna fixos que ocorrem neste mês/ano
   const result=[];
   S.fixos.forEach(f=>{
     const ini=f.ano_inicio*10000+(f.mes_inicio)*100;
     const mesOrd=a*10000+(m+1)*100;
     if(mesOrd<ini)return;
+    // Verifica mes_fim (daqui pra frente)
+    if(f.mes_fim&&f.ano_fim){
+      const fim=f.ano_fim*10000+f.mes_fim*100;
+      if(mesOrd>=fim)return;
+    }
     const maxParc=f.parcelas||9999;
     const mesesDesde=(a-f.ano_inicio)*12+(m+1-f.mes_inicio);
     if(mesesDesde<0||mesesDesde>=maxParc)return;
-    result.push(f);
+    // Verifica exceção de apagado
+    const exc=S.excecoes.find(e=>e.fixo_id===f.id&&e.mes===m+1&&e.ano===a&&e.tipo==='apagado');
+    if(exc)return;
+    // Verifica exceção de editado — retorna versão editada
+    const excEdit=S.excecoes.find(e=>e.fixo_id===f.id&&e.mes===m+1&&e.ano===a&&e.tipo==='editado');
+    if(excEdit){
+      result.push({...f,valor:excEdit.valor,descricao:excEdit.descricao,carteira_id:excEdit.carteira_id,_excId:excEdit.id});
+    } else {
+      result.push(f);
+    }
   });
   return result;
 }
@@ -691,29 +743,36 @@ async function delLanc(){
 // ── FIXOS ──
 function abreFixo(editId){
   S.fixoEditId=editId||null;
+  S.fixoMesRef=S.mes+1;
+  S.fixoAnoRef=S.ano;
   renderFixoCartSel(null);
   if(editId){
-    const f=S.fixos.find(x=>x.id===editId);
-    if(!f)return;
+    // Busca no fixo original (não na versão editada do mês)
+    const f=S.fixos.find(x=>x.id===editId)||S.fixos.find(x=>{
+      const fm=fixosDoMes(S.mes,S.ano);
+      const fx=fm.find(ff=>ff.id===x.id&&ff._excId);
+      return fx;
+    });
+    const fReal=S.fixos.find(x=>x.id===editId);
+    if(!fReal)return;
+    // Pega valores do mês (pode ser exceção editada)
+    const excEdit=S.excecoes.find(e=>e.fixo_id===editId&&e.mes===S.mes+1&&e.ano===S.ano&&e.tipo==='editado');
     $('sh-fixo-tit').textContent='Editar fixo';
-    setFixoTipo(f.tipo);
-    $('f-desc').value=f.descricao;
-    $('f-val').value=f.valor;
-    $('f-dia').value=f.dia;
-    renderFixoCartSel(f.carteira_id);
-    if(f.parcelas){
-      setFixoRep('parcelado');
-      $('f-parcelas').value=f.parcelas;
-    } else {
-      setFixoRep('fixo');
-    }
+    setFixoTipo(fReal.tipo);
+    $('f-desc').value=excEdit?excEdit.descricao:fReal.descricao;
+    $('f-val').value=excEdit?excEdit.valor:fReal.valor;
+    $('f-dia').value=fReal.dia;
+    renderFixoCartSel(excEdit?excEdit.carteira_id:fReal.carteira_id);
+    if(fReal.parcelas){setFixoRep('parcelado');$('f-parcelas').value=fReal.parcelas;}
+    else{setFixoRep('fixo');}
     $('btn-del-fixo').style.display='block';
+    $('fixo-escopo').style.display='block';
   } else {
     $('sh-fixo-tit').textContent='Novo fixo / parcelado';
-    setFixoTipo('saida');
-    setFixoRep('fixo');
+    setFixoTipo('saida');setFixoRep('fixo');
     $('f-desc').value='';$('f-val').value='';$('f-dia').value='';$('f-parcelas').value='';
     $('btn-del-fixo').style.display='none';
+    $('fixo-escopo').style.display='none';
   }
   $('sh-fixo').classList.add('aberto');
 }
@@ -745,23 +804,50 @@ async function salvaFixo(){
   if(!desc||!val||!dia)return alert('Preencha todos os campos.');
   const parcelas=S.fixoRep==='parcelado'?parseInt($('f-parcelas').value)||null:null;
   if(S.fixoRep==='parcelado'&&!parcelas)return alert('Informe o número de parcelas.');
-  const dados={
-    user_id:S.user.id,descricao:desc,valor:val,tipo:S.fixoTipo,
-    dia,carteira_id:cartId,parcelas,
-    mes_inicio:S.mes+1,ano_inicio:S.ano,ativo:true,
-  };
-  if(S.fixoEditId){
-    await db.from('fixos').update(dados).eq('id',S.fixoEditId);
+
+  if(!S.fixoEditId){
+    // Novo fixo
+    await db.from('fixos').insert({
+      user_id:S.user.id,descricao:desc,valor:val,tipo:S.fixoTipo,
+      dia,carteira_id:cartId,parcelas,
+      mes_inicio:S.mes+1,ano_inicio:S.ano,ativo:true,
+    });
   } else {
-    await db.from('fixos').insert(dados);
+    const escopo=$('f-escopo').value;
+    if(escopo==='todos'){
+      await db.from('fixos').update({descricao:desc,valor:val,carteira_id:cartId}).eq('id',S.fixoEditId);
+    } else if(escopo==='frente'){
+      await db.from('fixos').update({mes_fim:S.fixoMesRef,ano_fim:S.fixoAnoRef}).eq('id',S.fixoEditId);
+      await db.from('fixos').insert({
+        user_id:S.user.id,descricao:desc,valor:val,tipo:S.fixoTipo,
+        dia,carteira_id:cartId,parcelas,
+        mes_inicio:S.fixoMesRef,ano_inicio:S.fixoAnoRef,ativo:true,
+      });
+    } else {
+      // só este mês — cria/atualiza exceção editada
+      const excExist=S.excecoes.find(e=>e.fixo_id===S.fixoEditId&&e.mes===S.fixoMesRef&&e.ano===S.fixoAnoRef&&e.tipo==='editado');
+      const excDados={user_id:S.user.id,fixo_id:S.fixoEditId,mes:S.fixoMesRef,ano:S.fixoAnoRef,tipo:'editado',valor:val,descricao:desc,carteira_id:cartId};
+      if(excExist){await db.from('fixos_excecoes').update(excDados).eq('id',excExist.id);}
+      else{await db.from('fixos_excecoes').insert(excDados);}
+    }
   }
   await carrega();fechaShFixo();render();
 }
 
 async function delFixo(){
   if(!S.fixoEditId)return;
-  if(!confirm('Apagar este fixo?'))return;
-  await db.from('fixos').update({ativo:false}).eq('id',S.fixoEditId);
+  const escopo=$('f-escopo').value;
+  if(escopo==='todos'){
+    if(!confirm('Apagar este fixo de todos os meses?'))return;
+    await db.from('fixos').update({ativo:false}).eq('id',S.fixoEditId);
+  } else if(escopo==='frente'){
+    if(!confirm('Apagar deste mês em diante?'))return;
+    await db.from('fixos').update({mes_fim:S.fixoMesRef,ano_fim:S.fixoAnoRef}).eq('id',S.fixoEditId);
+  } else {
+    if(!confirm('Apagar só este mês?'))return;
+    const excDados={user_id:S.user.id,fixo_id:S.fixoEditId,mes:S.fixoMesRef,ano:S.fixoAnoRef,tipo:'apagado'};
+    await db.from('fixos_excecoes').insert(excDados);
+  }
   await carrega();fechaShFixo();render();
 }
 </script>
@@ -791,6 +877,14 @@ async function delFixo(){
     <div id="f-parc-wrap" style="display:none;">
       <div class="sh-lbl">Número de parcelas</div>
       <input class="sh-inp" type="number" id="f-parcelas" placeholder="Ex: 12" min="1" inputmode="numeric"/>
+    </div>
+    <div id="fixo-escopo" style="display:none;">
+      <div class="sh-lbl">Alterar / Apagar</div>
+      <select class="sh-sel" id="f-escopo">
+        <option value="mes">Só este mês</option>
+        <option value="frente">Daqui pra frente</option>
+        <option value="todos">Todos os meses</option>
+      </select>
     </div>
     <div class="sh-actions">
       <button class="btn-canc" onclick="fechaShFixo()">Cancelar</button>
