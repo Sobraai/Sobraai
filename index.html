@@ -261,6 +261,10 @@ body.tema-claro .btn-p,body.tema-claro .btn-salv,body.tema-claro .bnav-fab{color
         <div style="width:36px;height:36px;border-radius:10px;background:#1a1000;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🔁</div>
         <div><div style="font-size:14px;font-weight:500;color:#fff;">Fixo / Parcelado</div><div style="font-size:11px;color:var(--ts);">Repete todo mês ou por X vezes</div></div>
       </button>
+      <button onclick="fechaFab();abreCompra(null);" style="background:var(--bg2);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;border:0.5px solid var(--bd);text-align:left;width:100%;">
+        <div style="width:36px;height:36px;border-radius:10px;background:#1a1a2e;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">💳</div>
+        <div><div style="font-size:14px;font-weight:500;color:#fff;">Compra no cartão</div><div style="font-size:11px;color:var(--ts);">Entra na fatura, não no saldo agora</div></div>
+      </button>
     </div>
   </div>
   <div id="fab-overlay" style="display:none;position:fixed;inset:0;z-index:48;" onclick="fechaFab()"></div>
@@ -320,6 +324,13 @@ const S={
   fixoEditId:null,
   fixoMesRef:null,
   fixoAnoRef:null,
+  cartoes:[],
+  compras:[],
+  faturasEdit:[],
+  cartTipo:'saida',
+  compraEditId:null,
+  cartaoEditId:null,
+  faturaView:null,
   // onboarding
   obBancos:[{nome:'',emoji:'🏦',saldo:''}],
 };
@@ -386,16 +397,22 @@ async function sair(){
 
 // ── CARREGA ──
 async function carrega(){
-  const[c,l,f,e]=await Promise.all([
+  const[c,l,f,e,ct,cp,fe]=await Promise.all([
     db.from('carteiras').select('*').eq('user_id',S.user.id),
     db.from('lancamentos').select('*').eq('user_id',S.user.id),
     db.from('fixos').select('*').eq('user_id',S.user.id).eq('ativo',true),
     db.from('fixos_excecoes').select('*').eq('user_id',S.user.id),
+    db.from('cartoes').select('*').eq('user_id',S.user.id),
+    db.from('compras_cartao').select('*').eq('user_id',S.user.id),
+    db.from('faturas_edit').select('*').eq('user_id',S.user.id),
   ]);
   S.carteiras=c.data||[];
   S.lancs=l.data||[];
   S.fixos=f.data||[];
   S.excecoes=e.data||[];
+  S.cartoes=ct.data||[];
+  S.compras=cp.data||[];
+  S.faturasEdit=fe.data||[];
 }
 
 // ── ONBOARDING ──
@@ -486,6 +503,27 @@ function fixosDoMes(m,a){
   return result;
 }
 
+// ── FATURAS ──
+// Valor da fatura de um cartão num mês/ano = soma das compras com mes_fatura/ano_fatura,
+// a menos que o usuário tenha editado o valor (faturas_edit).
+function valorFatura(cartaoId,mes,ano){
+  const edit=S.faturasEdit.find(e=>e.cartao_id===cartaoId&&e.mes===mes&&e.ano===ano);
+  if(edit)return parseFloat(edit.valor);
+  const comprasFat=S.compras.filter(c=>c.cartao_id===cartaoId&&c.mes_fatura===mes&&c.ano_fatura===ano);
+  return comprasFat.reduce((s,c)=>s+parseFloat(c.valor),0);
+}
+// Faturas que vencem num determinado mês/ano (uma por cartão que tenha valor > 0)
+function faturasDoMes(m,a){
+  const result=[];
+  S.cartoes.forEach(cart=>{
+    const v=valorFatura(cart.id,m+1,a);
+    if(v>0){
+      result.push({cartao:cart,valor:v,dia:cart.dia_vencimento,mes:m+1,ano:a});
+    }
+  });
+  return result;
+}
+
 function saldoDia(d,m,a){
   const base=saldoTotal();
   // Lançamentos manuais até esta data
@@ -516,7 +554,25 @@ function saldoDia(d,m,a){
     });
     im++;if(im>11){im=0;ia++;}
   }
-  return base+deltaLancs+deltaFixos;
+  // Faturas de cartão: descontam no dia do vencimento
+  let deltaFaturas=0;
+  // Determinar mês/ano mínimo entre as compras
+  if(S.compras.length){
+    let cm=null,ca=null;
+    S.compras.forEach(c=>{
+      if(cm===null||(c.ano_fatura<ca||(c.ano_fatura===ca&&c.mes_fatura<cm))){cm=c.mes_fatura;ca=c.ano_fatura;}
+    });
+    let fm=cm-1,fa=ca; // base 0
+    while(fa<a||(fa===a&&fm<=m)){
+      const faturas=faturasDoMes(fm,fa);
+      faturas.forEach(fat=>{
+        const limDia=fa===a&&fm===m?d:new Date(fa,fm+1,0).getDate();
+        if(fat.dia<=limDia)deltaFaturas-=fat.valor;
+      });
+      fm++;if(fm>11){fm=0;fa++;}
+    }
+  }
+  return base+deltaLancs+deltaFixos+deltaFaturas;
 }
 
 // ── RENDER ──
@@ -541,13 +597,15 @@ function render(){
   // Timeline
   const dm=S.lancs.filter(l=>l.mes===m+1&&l.ano===a);
   const fixesMes=fixosDoMes(m,a);
+  const faturasMes=faturasDoMes(m,a);
   let h='';
   for(let d=1;d<=dias;d++){
     const isHj=isAtual&&d===HJD;
     const isFutD=isFut||(isAtual&&d>HJD);
     const dLancs=dm.filter(l=>l.dia===d);
     const dFixos=fixesMes.filter(f=>f.dia===d);
-    const temItem=dLancs.length||dFixos.length;
+    const dFaturas=faturasMes.filter(f=>f.dia===d);
+    const temItem=dLancs.length||dFixos.length||dFaturas.length;
     const saldo=saldoDia(d,m,a);
     const isNeg=saldo<0;
     const diaNome=DIAS[new Date(a,m,d).getDay()];
@@ -584,6 +642,16 @@ function render(){
           <span class="tl-saldo${isNeg?' neg':''}">${isNeg?'-':''}R$${brl(Math.abs(saldo))}</span>
         </div>
         <div class="tl-itens" id="tl-itens-${d}" style="display:none;">`;
+
+    dFaturas.forEach(fat=>{
+      h+=`<div class="tl-item" onclick="event.stopPropagation();verFatura('${fat.cartao.id}',${fat.mes},${fat.ano})">
+        <div class="tl-item-info">
+          <div class="tl-item-nome">Fatura ${fat.cartao.nome} <span class="tl-tag">cartão</span></div>
+          <div class="tl-item-sub">${fat.cartao.emoji} Toque para ver detalhes</div>
+        </div>
+        <div class="tl-item-val neg">-R$${brl(fat.valor)}</div>
+      </div>`;
+    });
 
     dFixos.forEach(f=>{
       const isEnt=f.tipo==='entrada';
@@ -857,6 +925,7 @@ function abaApp(aba){
   } else if(aba==='cartoes'){
     $('bnav-cartoes').classList.add('active');
     $('content-cartoes').style.display='block';
+    renderCartoes();
   } else if(aba==='config'){
     $('bnav-config').classList.add('active');
     $('content-config').style.display='block';
@@ -864,18 +933,57 @@ function abaApp(aba){
 }
 
 // ── CARTEIRAS ──
+// Saldo real de uma carteira = saldo inicial + lançamentos dela (até hoje) + faturas dos cartões dessa carteira (vencidas até hoje)
+function saldoCarteira(cartId){
+  const cart=S.carteiras.find(c=>c.id===cartId);
+  if(!cart)return 0;
+  let saldo=parseFloat(cart.saldo||0);
+  const limOrd=HJA*10000+(HJM+1)*100+HJD;
+  // Lançamentos dessa carteira até hoje
+  S.lancs.forEach(l=>{
+    if(l.carteira_id!==cartId)return;
+    const ord=l.ano*10000+l.mes*100+l.dia;
+    if(ord<=limOrd)saldo+=(l.tipo==='entrada'?1:-1)*parseFloat(l.valor);
+  });
+  // Fixos dessa carteira até hoje
+  S.fixos.forEach(f=>{
+    if(f.carteira_id!==cartId)return;
+    const ocorrs=fixoOcorrencias(f,HJM,HJA,HJD);
+    ocorrs.forEach(()=>{saldo+=(f.tipo==='entrada'?1:-1)*parseFloat(f.valor);});
+  });
+  // Faturas dos cartões vinculados a essa carteira, vencidas até hoje
+  S.cartoes.forEach(ct=>{
+    if(ct.carteira_id!==cartId)return;
+    S.compras.forEach(()=>{});
+    // percorrer meses de fatura
+    const meses=new Set();
+    S.compras.filter(c=>c.cartao_id===ct.id).forEach(c=>meses.add(c.ano_fatura*100+(c.mes_fatura-1)));
+    S.faturasEdit.filter(e=>e.cartao_id===ct.id).forEach(e=>meses.add(e.ano*100+(e.mes-1)));
+    meses.forEach(key=>{
+      const fa=Math.floor(key/100),fm=key%100;
+      const v=valorFatura(ct.id,fm+1,fa);
+      const ord=fa*10000+(fm+1)*100+ct.dia_vencimento;
+      if(v>0&&ord<=limOrd)saldo-=v;
+    });
+  });
+  return saldo;
+}
+
 function renderCarteiras(){
   const lista=$('lista-carteiras');
   if(!lista)return;
-  lista.innerHTML=S.carteiras.map(cart=>`
+  lista.innerHTML=S.carteiras.map(cart=>{
+    const real=saldoCarteira(cart.id);
+    return `
     <div style="background:var(--bg2);border-radius:14px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px;border:0.5px solid var(--bd);">
       <div style="font-size:24px;">${cart.emoji}</div>
       <div style="flex:1;">
         <div style="font-size:14px;font-weight:500;color:#fff;">${cart.nome}</div>
-        <div style="font-size:13px;color:var(--v);margin-top:2px;">R$ ${Number(cart.saldo).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+        <div style="font-size:13px;color:${real<0?'var(--r)':'var(--v)'};margin-top:2px;">${real<0?'-':''}R$ ${Number(Math.abs(real)).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+        <div style="font-size:10px;color:var(--ts);margin-top:1px;">início: R$ ${Number(cart.saldo).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
       </div>
       <button onclick="editarCarteira('${cart.id}')" style="background:var(--bg3);border-radius:8px;padding:6px 12px;color:var(--ts);font-size:12px;">Editar</button>
-    </div>`).join('');
+    </div>`;}).join('');
 }
 function novaCarteira(){
   const nome=prompt('Nome da carteira:');
@@ -890,6 +998,208 @@ function editarCarteira(id){
   if(!nome)return;
   const saldo=parseFloat(prompt('Saldo atual R$:',cart.saldo)||'0');
   db.from('carteiras').update({nome:nome.trim(),saldo}).eq('id',id).then(async()=>{await carrega();renderCarteiras();render();});
+}
+
+// ── CARTÕES ──
+function renderCartoes(){
+  const el=$('content-cartoes');
+  if(S.faturaView){renderFaturaDetalhe();return;}
+  let h='<div style="padding:16px;"><div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:6px;">Cartões de crédito</div><div style="font-size:12px;color:var(--ts);margin-bottom:16px;">Compras no cartão entram na fatura. A fatura desconta do saldo no vencimento.</div>';
+  if(!S.cartoes.length){
+    h+='<div style="text-align:center;padding:30px 16px;color:var(--ts);font-size:13px;">Nenhum cartão ainda.<br>Adicione seu primeiro cartão.</div>';
+  } else {
+    S.cartoes.forEach(ct=>{
+      // Próxima fatura (mês atual)
+      const vAtual=valorFatura(ct.id,HJM+1,HJA);
+      h+=`<div style="background:var(--bg2);border-radius:14px;padding:14px 16px;margin-bottom:8px;border:0.5px solid var(--bd);">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="font-size:24px;">${ct.emoji}</div>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:500;color:#fff;">${ct.nome}</div>
+            <div style="font-size:11px;color:var(--ts);margin-top:2px;">Vence dia ${ct.dia_vencimento}</div>
+          </div>
+          <button onclick="editarCartao('${ct.id}')" style="background:var(--bg3);border-radius:8px;padding:6px 12px;color:var(--ts);font-size:12px;">Editar</button>
+        </div>
+        <div onclick="verFatura('${ct.id}',${HJM+1},${HJA})" style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--bd);display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
+          <span style="font-size:12px;color:var(--ts);">Fatura de ${MESES[HJM]}</span>
+          <span style="font-size:14px;font-weight:600;color:var(--r);">R$ ${brl(vAtual)} ›</span>
+        </div>
+      </div>`;
+    });
+  }
+  h+='<button class="btn-add" onclick="novoCartao()" style="margin-top:8px;">+ Adicionar cartão</button>';
+  h+='</div>';
+  el.innerHTML=h;
+}
+
+function novoCartao(){
+  const nome=prompt('Nome do cartão (ex: Nubank):');
+  if(!nome)return;
+  const dia=parseInt(prompt('Dia de vencimento da fatura (1-31):')||'10');
+  const cartId=S.carteiras[0]?S.carteiras[0].id:null;
+  db.from('cartoes').insert({user_id:S.user.id,nome:nome.trim(),emoji:'💳',dia_vencimento:dia,carteira_id:cartId}).then(async()=>{await carrega();renderCartoes();render();});
+}
+
+function editarCartao(id){
+  const ct=S.cartoes.find(c=>c.id===id);
+  if(!ct)return;
+  const nome=prompt('Nome do cartão:',ct.nome);
+  if(!nome)return;
+  const dia=parseInt(prompt('Dia de vencimento (1-31):',ct.dia_vencimento)||ct.dia_vencimento);
+  // Escolher carteira de débito
+  let cartId=ct.carteira_id;
+  if(S.carteiras.length>1){
+    const lista=S.carteiras.map((c,i)=>`${i+1}. ${c.nome}`).join('\\n');
+    const escolha=parseInt(prompt('De qual banco a fatura desconta?\\n'+lista,'1')||'1');
+    cartId=S.carteiras[escolha-1]?S.carteiras[escolha-1].id:ct.carteira_id;
+  }
+  if(confirm('Salvar alterações? (Cancelar para APAGAR o cartão)')){
+    db.from('cartoes').update({nome:nome.trim(),dia_vencimento:dia,carteira_id:cartId}).eq('id',id).then(async()=>{await carrega();renderCartoes();render();});
+  } else {
+    if(confirm('Apagar este cartão e todas as compras dele?')){
+      db.from('compras_cartao').delete().eq('cartao_id',id).then(()=>{
+        db.from('cartoes').delete().eq('id',id).then(async()=>{await carrega();renderCartoes();render();});
+      });
+    }
+  }
+}
+
+// Ver detalhes de uma fatura
+function verFatura(cartaoId,mes,ano){
+  S.faturaView={cartaoId,mes,ano};
+  abaApp('cartoes');
+}
+function voltarCartoes(){S.faturaView=null;renderCartoes();}
+
+function renderFaturaDetalhe(){
+  const el=$('content-cartoes');
+  const{cartaoId,mes,ano}=S.faturaView;
+  const ct=S.cartoes.find(c=>c.id===cartaoId);
+  if(!ct){S.faturaView=null;renderCartoes();return;}
+  const comprasFat=S.compras.filter(c=>c.cartao_id===cartaoId&&c.mes_fatura===mes&&c.ano_fatura===ano);
+  const vTotal=valorFatura(cartaoId,mes,ano);
+  const edit=S.faturasEdit.find(e=>e.cartao_id===cartaoId&&e.mes===mes&&e.ano===ano);
+  let h=`<div style="padding:16px;">
+    <button onclick="voltarCartoes()" style="background:none;color:var(--v);font-size:14px;padding:4px 0;margin-bottom:8px;">‹ Voltar</button>
+    <div style="font-size:20px;font-weight:700;color:#fff;">${ct.emoji} Fatura ${ct.nome}</div>
+    <div style="font-size:12px;color:var(--ts);margin-bottom:4px;">${MESES[mes-1]} ${ano} · vence dia ${ct.dia_vencimento}</div>
+    <div style="font-size:24px;font-weight:800;color:var(--r);margin:8px 0 4px;">R$ ${brl(vTotal)}</div>`;
+  if(edit)h+=`<div style="font-size:11px;color:#fbbf24;margin-bottom:12px;">⚠ Valor editado manualmente (original: R$ ${brl(comprasFat.reduce((s,c)=>s+parseFloat(c.valor),0))})</div>`;
+  h+=`<button onclick="editarValorFatura('${cartaoId}',${mes},${ano})" style="background:var(--bg3);border-radius:10px;padding:10px;width:100%;color:var(--tm);font-size:13px;font-weight:600;margin-bottom:16px;">✏️ Editar valor da fatura</button>`;
+  if(edit)h+=`<button onclick="resetarFatura('${cartaoId}',${mes},${ano})" style="background:transparent;border:1px solid var(--bd);border-radius:10px;padding:10px;width:100%;color:var(--ts);font-size:12px;margin-bottom:16px;">Voltar ao valor automático</button>`;
+  h+=`<div style="font-size:12px;font-weight:700;color:var(--ts);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Compras (${comprasFat.length})</div>`;
+  if(!comprasFat.length){
+    h+='<div style="text-align:center;padding:20px;color:var(--ts);font-size:13px;">Nenhuma compra nesta fatura.</div>';
+  } else {
+    comprasFat.forEach(cp=>{
+      const tag=cp.parcelas>1?`${cp.parcela_atual}/${cp.parcelas}`:'';
+      h+=`<div onclick="abreCompra('${cp.id}')" style="background:var(--bg2);border-radius:12px;padding:12px 14px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;border:0.5px solid var(--bd);">
+        <div><div style="font-size:13px;color:#fff;">${cp.descricao} ${tag?`<span class="tl-tag">${tag}</span>`:''}</div><div style="font-size:10px;color:var(--ts);margin-top:1px;">dia ${cp.dia}</div></div>
+        <div style="font-size:13px;font-weight:600;color:var(--r);">R$ ${brl(cp.valor)}</div>
+      </div>`;
+    });
+  }
+  h+='</div>';
+  el.innerHTML=h;
+}
+
+function editarValorFatura(cartaoId,mes,ano){
+  const atual=valorFatura(cartaoId,mes,ano);
+  const novo=prompt('Novo valor da fatura R$ (coloque 0 se não pagou nada):',atual);
+  if(novo===null)return;
+  const v=parseFloat(novo)||0;
+  const edit=S.faturasEdit.find(e=>e.cartao_id===cartaoId&&e.mes===mes&&e.ano===ano);
+  if(edit){
+    db.from('faturas_edit').update({valor:v}).eq('id',edit.id).then(async()=>{await carrega();renderFaturaDetalhe();render();});
+  } else {
+    db.from('faturas_edit').insert({user_id:S.user.id,cartao_id:cartaoId,mes,ano,valor:v}).then(async()=>{await carrega();renderFaturaDetalhe();render();});
+  }
+}
+function resetarFatura(cartaoId,mes,ano){
+  const edit=S.faturasEdit.find(e=>e.cartao_id===cartaoId&&e.mes===mes&&e.ano===ano);
+  if(edit)db.from('faturas_edit').delete().eq('id',edit.id).then(async()=>{await carrega();renderFaturaDetalhe();render();});
+}
+
+// ── COMPRA NO CARTÃO ──
+function abreCompra(editId){
+  S.compraEditId=editId||null;
+  // popular select de cartões
+  $('cp-cartao').innerHTML=S.cartoes.map(c=>`<option value="${c.id}">${c.emoji} ${c.nome}</option>`).join('');
+  if(!S.cartoes.length){
+    alert('Adicione um cartão primeiro (aba Cartões).');
+    return;
+  }
+  if(editId){
+    const cp=S.compras.find(x=>x.id===editId);
+    if(!cp)return;
+    $('sh-compra-tit').textContent='Editar compra';
+    $('cp-desc').value=cp.descricao;
+    $('cp-val').value=cp.valor;
+    $('cp-dia').value=cp.dia;
+    $('cp-cartao').value=cp.cartao_id;
+    $('cp-parcelas').value=cp.parcelas||1;
+    S.compraFaturaMes=cp.mes_fatura;
+    S.compraFaturaAno=cp.ano_fatura;
+    $('btn-del-compra').style.display='block';
+  } else {
+    $('sh-compra-tit').textContent='Nova compra no cartão';
+    $('cp-desc').value='';$('cp-val').value='';
+    $('cp-dia').value=(S.mes===HJM&&S.ano===HJA)?HJD:'';
+    $('cp-parcelas').value=1;
+    S.compraFaturaMes=S.mes+1;
+    S.compraFaturaAno=S.ano;
+    $('btn-del-compra').style.display='none';
+  }
+  atualizaFaturaLabel();
+  $('sh-compra').classList.add('aberto');
+}
+function atualizaFaturaLabel(){
+  const lbl=$('cp-fatura-lbl');
+  if(lbl)lbl.textContent=`Fatura de ${MESES[S.compraFaturaMes-1]} ${S.compraFaturaAno}`;
+}
+function mudaFatura(d){
+  let m=S.compraFaturaMes-1+d,a=S.compraFaturaAno;
+  if(m>11){m=0;a++;}if(m<0){m=11;a--;}
+  S.compraFaturaMes=m+1;S.compraFaturaAno=a;
+  atualizaFaturaLabel();
+}
+function fechaShCompra(){$('sh-compra').classList.remove('aberto');}
+
+async function salvaCompra(){
+  const desc=$('cp-desc').value.trim();
+  const val=parseFloat($('cp-val').value);
+  const dia=parseInt($('cp-dia').value);
+  const cartaoId=$('cp-cartao').value;
+  const parcelas=parseInt($('cp-parcelas').value)||1;
+  if(!desc||!val||!dia||!cartaoId)return alert('Preencha todos os campos.');
+
+  if(S.compraEditId){
+    await db.from('compras_cartao').update({descricao:desc,valor:val,dia,cartao_id:cartaoId,mes_fatura:S.compraFaturaMes,ano_fatura:S.compraFaturaAno}).eq('id',S.compraEditId);
+  } else if(parcelas>1){
+    // Dividir em N parcelas, cada uma na fatura de um mês
+    const valorParcela=val/parcelas;
+    let m=S.compraFaturaMes-1,a=S.compraFaturaAno;
+    const rows=[];
+    for(let p=0;p<parcelas;p++){
+      rows.push({user_id:S.user.id,cartao_id:cartaoId,descricao:desc,valor:valorParcela,dia,mes_fatura:m+1,ano_fatura:a,parcelas,parcela_atual:p+1});
+      m++;if(m>11){m=0;a++;}
+    }
+    await db.from('compras_cartao').insert(rows);
+  } else {
+    await db.from('compras_cartao').insert({user_id:S.user.id,cartao_id:cartaoId,descricao:desc,valor:val,dia,mes_fatura:S.compraFaturaMes,ano_fatura:S.compraFaturaAno,parcelas:1,parcela_atual:1});
+  }
+  await carrega();fechaShCompra();
+  if(S.faturaView)renderFaturaDetalhe();else renderCartoes();
+  render();
+}
+
+async function delCompra(){
+  if(!S.compraEditId)return;
+  if(!confirm('Apagar esta compra?'))return;
+  await db.from('compras_cartao').delete().eq('id',S.compraEditId);
+  await carrega();fechaShCompra();
+  if(S.faturaView)renderFaturaDetalhe();else renderCartoes();
+  render();
 }
 
 // ── TEMA ──
@@ -909,6 +1219,9 @@ async function limparDados(){
   if(!confirm('Tem certeza? Lançamentos, fixos e carteiras serão apagados.'))return;
   const uid=S.user.id;
   await db.from('fixos_excecoes').delete().eq('user_id',uid);
+  await db.from('faturas_edit').delete().eq('user_id',uid);
+  await db.from('compras_cartao').delete().eq('user_id',uid);
+  await db.from('cartoes').delete().eq('user_id',uid);
   await db.from('lancamentos').delete().eq('user_id',uid);
   await db.from('fixos').delete().eq('user_id',uid);
   await db.from('carteiras').delete().eq('user_id',uid);
@@ -950,6 +1263,35 @@ async function limparDados(){
       <button class="btn-salv" id="btn-salv-fixo" onclick="pedirEscopoFixo('salvar')">Salvar</button>
     </div>
     <button class="btn-del" id="btn-del-fixo" style="display:none;" onclick="pedirEscopoFixo('apagar')">Apagar</button>
+  </div>
+</div>
+
+<!-- SHEET: COMPRA NO CARTÃO -->
+<div class="ov" id="sh-compra">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-tit" id="sh-compra-tit">Nova compra no cartão</div>
+    <div class="sh-lbl">Cartão</div>
+    <select class="sh-sel" id="cp-cartao"></select>
+    <div class="sh-lbl">Valor (R$)</div>
+    <input class="sh-val" type="number" id="cp-val" placeholder="0,00" inputmode="decimal"/>
+    <div class="sh-lbl">Descrição</div>
+    <input class="sh-inp" type="text" id="cp-desc" placeholder="Ex: Remédio, Mercado..."/>
+    <div class="sh-lbl">Dia da compra</div>
+    <input class="sh-inp" type="number" id="cp-dia" placeholder="Dia" min="1" max="31" inputmode="numeric"/>
+    <div class="sh-lbl">Parcelas</div>
+    <input class="sh-inp" type="number" id="cp-parcelas" value="1" min="1" inputmode="numeric"/>
+    <div class="sh-lbl">Entra em qual fatura?</div>
+    <div style="display:flex;align-items:center;gap:8px;background:var(--bg3);border-radius:11px;padding:8px;">
+      <button onclick="mudaFatura(-1)" style="width:32px;height:32px;border-radius:8px;background:var(--bg2);color:var(--v);font-size:16px;">‹</button>
+      <div id="cp-fatura-lbl" style="flex:1;text-align:center;font-size:13px;font-weight:600;color:#fff;">—</div>
+      <button onclick="mudaFatura(1)" style="width:32px;height:32px;border-radius:8px;background:var(--bg2);color:var(--v);font-size:16px;">›</button>
+    </div>
+    <div class="sh-actions">
+      <button class="btn-canc" onclick="fechaShCompra()">Cancelar</button>
+      <button class="btn-salv" onclick="salvaCompra()">Salvar</button>
+    </div>
+    <button class="btn-del" id="btn-del-compra" style="display:none;" onclick="delCompra()">Apagar compra</button>
   </div>
 </div>
 
