@@ -231,6 +231,22 @@ body.tema-claro .btn-p,body.tema-claro .btn-salv,body.tema-claro .bnav-fab{color
 /* Auth box flutuando */
 .auth-box{box-shadow:0 12px 50px rgba(0,0,0,.6);}
 .auth-logo-txt span{text-shadow:0 0 24px rgba(34,197,94,.5);}
+
+/* Entrada em cascata ao trocar de mês */
+@keyframes entra{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+.content>div{animation:entra .25s ease backwards;}
+.content>div:nth-child(1){animation-delay:.00s}
+.content>div:nth-child(2){animation-delay:.02s}
+.content>div:nth-child(3){animation-delay:.04s}
+.content>div:nth-child(4){animation-delay:.06s}
+.content>div:nth-child(5){animation-delay:.08s}
+.content>div:nth-child(6){animation-delay:.10s}
+.content>div:nth-child(7){animation-delay:.12s}
+.content>div:nth-child(8){animation-delay:.14s}
+.content>div:nth-child(9){animation-delay:.16s}
+.content>div:nth-child(10){animation-delay:.18s}
+.content>div:nth-child(11){animation-delay:.20s}
+.content>div:nth-child(12){animation-delay:.22s}
 </style>
 </head>
 <body>
@@ -462,6 +478,7 @@ async function authGo(){
 
 async function iniciaFluxo(u){
   S.user=u;
+  S._scrollHoje=true;
   await carrega();
   if(S.carteiras.length===0){mostrar('scr-ob');obRender();}
   else{mostrar('scr-app');render();}
@@ -632,18 +649,19 @@ function saldoDia(d,m,a){
     const fm=f.mes_inicio-1,fa=f.ano_inicio;
     if(mIter===null||(fa<aIter||(fa===aIter&&fm<mIter))){mIter=fm;aIter=fa;}
   });
-  if(mIter===null)return base+deltaLancs;
-  // Iterar cada mês desde o início até a data alvo
-  let im=mIter,ia=aIter;
-  while(ia<a||(ia===a&&im<=m)){
-    const limDia=ia===a&&im===m?d:new Date(ia,im+1,0).getDate();
-    const fixesDesseMes=fixosDoMes(im,ia);
-    fixesDesseMes.forEach(f=>{
-      if(f.dia<=limDia){
-        deltaFixos+=(f.tipo==='entrada'?1:-1)*parseFloat(f.valor);
-      }
-    });
-    im++;if(im>11){im=0;ia++;}
+  if(mIter!==null){
+    // Iterar cada mês desde o início até a data alvo
+    let im=mIter,ia=aIter;
+    while(ia<a||(ia===a&&im<=m)){
+      const limDia=ia===a&&im===m?d:new Date(ia,im+1,0).getDate();
+      const fixesDesseMes=fixosDoMes(im,ia);
+      fixesDesseMes.forEach(f=>{
+        if(f.dia<=limDia){
+          deltaFixos+=(f.tipo==='entrada'?1:-1)*parseFloat(f.valor);
+        }
+      });
+      im++;if(im>11){im=0;ia++;}
+    }
   }
   // Faturas de cartão: descontam no dia do vencimento
   let deltaFaturas=0;
@@ -679,10 +697,10 @@ function render(){
   const dias=new Date(a,m+1,0).getDate();
   const sfim=saldoDia(dias,m,a);
   const rHj=$('r-hoje');
-  rHj.textContent=(shj<0?'- R$':'R$ ')+brl(Math.abs(shj));
+  animaValor(rHj,shj);
   rHj.className='rodape-val'+(shj<0?' neg':'');
   const rFim=$('r-fim');
-  rFim.textContent=(sfim<0?'- R$':'R$ ')+brl(Math.abs(sfim));
+  animaValor(rFim,sfim);
   rFim.className='rodape-val'+(sfim<0?' neg':'');
 
   // Timeline
@@ -716,7 +734,7 @@ function render(){
     // Dias sem lançamento: sempre mostrar
     if(!temItem){
       if(false)continue; // mostra todos
-      h+=`<div class="tl-row">
+      h+=`<div class="tl-row" id="tl-dia-${d}">
         <div class="tl-line">
           <div class="tl-dot vazio"></div>
           ${!isUltimo?'<div class="tl-seg"></div>':''}
@@ -792,6 +810,14 @@ function render(){
     const el=document.getElementById('tl-itens-'+HJD);
     if(el)el.style.display='block';
   }
+  // Auto-scroll suave até o dia de hoje
+  if(isAtual&&S._scrollHoje){
+    S._scrollHoje=false;
+    setTimeout(()=>{
+      const alvo=document.getElementById('tl-body-'+HJD)||document.getElementById('tl-dia-'+HJD);
+      if(alvo)alvo.scrollIntoView({behavior:'smooth',block:'center'});
+    },120);
+  }
 }
 
 function navMes(d){
@@ -801,8 +827,38 @@ function navMes(d){
   // Não permite navegar antes do mês atual (início do app)
   if(na*100+nm < HJA*100+HJM)return;
   S.mes=nm;S.ano=na;
+  if(nm===HJM&&na===HJA)S._scrollHoje=true;
   render();
 }
+
+// Saldo que conta: anima o número do valor antigo ao novo
+function animaValor(el,novo){
+  const antigo=el.dataset.v!==undefined?parseFloat(el.dataset.v):novo;
+  el.dataset.v=novo;
+  if(antigo===novo){el.textContent=(novo<0?'- R$':'R$ ')+brl(Math.abs(novo));return;}
+  const t0=performance.now(),dur=500;
+  function passo(t){
+    const p=Math.min(1,(t-t0)/dur);
+    const e=1-Math.pow(1-p,3);
+    const v=antigo+(novo-antigo)*e;
+    el.textContent=(v<0?'- R$':'R$ ')+brl(Math.abs(v));
+    if(p<1)requestAnimationFrame(passo);
+  }
+  requestAnimationFrame(passo);
+}
+
+// Swipe: deslizar o dedo troca o mês (só na aba Mês)
+(function(){
+  const el=document.getElementById('content');
+  if(!el)return;
+  let x0=0,y0=0;
+  el.addEventListener('touchstart',e=>{x0=e.touches[0].clientX;y0=e.touches[0].clientY;},{passive:true});
+  el.addEventListener('touchend',e=>{
+    const dx=e.changedTouches[0].clientX-x0;
+    const dy=e.changedTouches[0].clientY-y0;
+    if(Math.abs(dx)>70&&Math.abs(dx)>Math.abs(dy)*1.6)navMes(dx<0?1:-1);
+  },{passive:true});
+})();
 
 // ── LANÇAMENTO ──
 function abreLanc(dia,editId){
@@ -1317,12 +1373,11 @@ function renderCartoes(){
 }
 
 async function novoCartao(){
-  if(!S.carteiras.length){await dlgInfo('Sem carteiras','Adicione um banco na aba Carteiras antes de criar um cartão.');return;}
   const r=await dlgForm('Novo cartão',[
     {id:'nome',label:'Nome do cartão',type:'text',placeholder:'Ex: Nubank, Inter'},
     {id:'emoji',label:'Emoji',type:'text',value:'💳'},
     {id:'venc',label:'Dia de vencimento da fatura',type:'number',value:10},
-    {id:'cart',label:'Fatura desconta de qual banco?',type:'select',value:S.carteiras[0].id,options:S.carteiras.map(c=>({v:c.id,t:`${c.emoji} ${c.nome}`}))},
+    {id:'cart',label:'Banco da fatura (opcional)',type:'select',value:'',options:[{v:'',t:'— Escolho na hora de pagar —'},...S.carteiras.map(c=>({v:c.id,t:`${c.emoji} ${c.nome}`}))]},
   ]);
   if(!r||r==='__DELETE'||!r.nome||!r.nome.trim())return;
   await db.from('cartoes').insert({user_id:S.user.id,nome:r.nome.trim(),emoji:r.emoji||'💳',dia_vencimento:parseInt(r.venc)||10,carteira_id:r.cart||null});
@@ -1336,7 +1391,7 @@ async function editarCartao(id){
     {id:'nome',label:'Nome',type:'text',value:ct.nome},
     {id:'emoji',label:'Emoji',type:'text',value:ct.emoji},
     {id:'venc',label:'Dia de vencimento',type:'number',value:ct.dia_vencimento},
-    {id:'cart',label:'Fatura desconta de qual banco?',type:'select',value:ct.carteira_id,options:S.carteiras.map(c=>({v:c.id,t:`${c.emoji} ${c.nome}`}))},
+    {id:'cart',label:'Banco da fatura (opcional)',type:'select',value:ct.carteira_id||'',options:[{v:'',t:'— Escolho na hora de pagar —'},...S.carteiras.map(c=>({v:c.id,t:`${c.emoji} ${c.nome}`}))]},
   ],{delTxt:'Apagar cartão'});
   if(!r)return;
   if(r==='__DELETE'){
