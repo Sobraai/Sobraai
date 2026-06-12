@@ -247,6 +247,13 @@ body.tema-claro .btn-p,body.tema-claro .btn-salv,body.tema-claro .bnav-fab{color
 .content>div:nth-child(10){animation-delay:.18s}
 .content>div:nth-child(11){animation-delay:.20s}
 .content>div:nth-child(12){animation-delay:.22s}
+
+/* TOAST de confirmação */
+#toast{position:fixed;left:50%;bottom:calc(120px + var(--sb));transform:translateX(-50%) translateY(16px);background:rgba(22,22,22,.96);border:0.5px solid rgba(34,197,94,.35);color:var(--tm);font-size:13px;font-weight:600;padding:10px 18px;border-radius:30px;box-shadow:0 6px 24px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:all .3s cubic-bezier(.34,1.3,.64,1);z-index:200;white-space:nowrap;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+/* FAB: o + gira e vira ✕ */
+#fab-ic{display:inline-block;transition:transform .3s cubic-bezier(.34,1.56,.64,1);}
+#fab-ic.aberto{transform:rotate(45deg);}
 </style>
 </head>
 <body>
@@ -924,14 +931,14 @@ async function salvaLanc(){
   } else {
     await db.from('lancamentos').insert(dados);
   }
-  await carrega();fechaSh();render();
+  await carrega();fechaSh();render();toast('✓ Lançado');
 }
 
 async function delLanc(){
   if(!S.editId)return;
   const ok=await dlgConfirm('Apagar lançamento?','','Apagar',true);if(!ok)return;
   await db.from('lancamentos').delete().eq('id',S.editId);
-  await carrega();fechaSh();render();
+  await carrega();fechaSh();render();toast('Apagado');
 }
 
 // ── FIXOS ──
@@ -1037,7 +1044,7 @@ async function salvaFixoEscopo(escopo){
     if(excExist){await db.from('fixos_excecoes').update(excDados).eq('id',excExist.id);}
     else{await db.from('fixos_excecoes').insert(excDados);}
   }
-  await carrega();fechaShFixo();render();
+  await carrega();fechaShFixo();render();toast('✓ Fixo salvo');
 }
 
 async function apagarFixoEscopo(escopo){
@@ -1050,7 +1057,7 @@ async function apagarFixoEscopo(escopo){
     const excDados={user_id:S.user.id,fixo_id:S.fixoEditId,mes:S.fixoMesRef,ano:S.fixoAnoRef,tipo:'apagado'};
     await db.from('fixos_excecoes').insert(excDados);
   }
-  await carrega();fechaShFixo();render();
+  await carrega();fechaShFixo();render();toast('Fixo apagado');
 }
 
 // aliases para compatibilidade
@@ -1069,13 +1076,22 @@ function toggleFab(){
   fabAberto=!fabAberto;
   $('fab-menu').style.display=fabAberto?'block':'none';
   $('fab-overlay').style.display=fabAberto?'block':'none';
-  $('fab-ic').textContent=fabAberto?'✕':'+';
+  $('fab-ic').classList.toggle('aberto',fabAberto);
 }
 function fechaFab(){
   fabAberto=false;
   $('fab-menu').style.display='none';
   $('fab-overlay').style.display='none';
-  $('fab-ic').textContent='+';
+  $('fab-ic').classList.remove('aberto');
+}
+let _toastT=null;
+function toast(msg){
+  const el=$('toast');
+  if(!el)return;
+  el.textContent=msg;
+  el.classList.add('show');
+  clearTimeout(_toastT);
+  _toastT=setTimeout(()=>el.classList.remove('show'),1800);
 }
 function abaApp(aba){
   fechaFab();
@@ -1302,7 +1318,7 @@ async function novaCarteira(){
   ]);
   if(!r||r==='__DELETE'||!r.nome||!r.nome.trim())return;
   await db.from('carteiras').insert({user_id:S.user.id,nome:r.nome.trim(),emoji:r.emoji||'🏦',saldo:parseFloat(r.saldo)||0});
-  await carrega();renderCarteiras();render();
+  await carrega();renderCarteiras();render();toast('✓ Carteira criada');
 }
 async function editarCarteira(id){
   const cart=S.carteiras.find(c=>c.id===id);
@@ -1389,7 +1405,7 @@ async function novoCartao(){
   ]);
   if(!r||r==='__DELETE'||!r.nome||!r.nome.trim())return;
   await db.from('cartoes').insert({user_id:S.user.id,nome:r.nome.trim(),emoji:r.emoji||'💳',dia_vencimento:parseInt(r.venc)||10,carteira_id:r.cart||null});
-  await carrega();renderCartoes();render();
+  await carrega();renderCartoes();render();toast('✓ Cartão criado');
 }
 
 async function editarCartao(id){
@@ -1518,7 +1534,7 @@ async function pagarFatura(cartaoId,mes,ano){
   const edit=faturaEdit(cartaoId,mes,ano);
   if(edit)await db.from('faturas_edit').update({pago:true,valor:valorPago,lancamento_id:lid}).eq('id',edit.id);
   else await db.from('faturas_edit').insert({user_id:S.user.id,cartao_id:cartaoId,mes,ano,valor:valorPago,pago:true,lancamento_id:lid});
-  await carrega();renderFaturaDetalhe();render();
+  await carrega();renderFaturaDetalhe();render();toast('💸 Fatura paga!');
 }
 
 async function desfazerPagamento(cartaoId,mes,ano){
@@ -1528,7 +1544,7 @@ async function desfazerPagamento(cartaoId,mes,ano){
   if(!ok)return;
   if(edit.lancamento_id)await db.from('lancamentos').delete().eq('id',edit.lancamento_id);
   await db.from('faturas_edit').delete().eq('id',edit.id);
-  await carrega();renderFaturaDetalhe();render();
+  await carrega();renderFaturaDetalhe();render();toast('Pagamento desfeito');
 }
 
 // ── COMPRA NO CARTÃO ──
@@ -1605,7 +1621,7 @@ async function salvaCompra(){
   }
   await carrega();fechaShCompra();
   if(S.faturaView)renderFaturaDetalhe();else renderCartoes();
-  render();
+  render();toast('✓ Na fatura');
 }
 
 async function delCompra(){
@@ -1614,7 +1630,7 @@ async function delCompra(){
   await db.from('compras_cartao').delete().eq('id',S.compraEditId);
   await carrega();fechaShCompra();
   if(S.faturaView)renderFaturaDetalhe();else renderCartoes();
-  render();
+  render();toast('Apagado');
 }
 
 // ── TEMA ──
@@ -1712,6 +1728,8 @@ async function limparDados(){
     <button class="btn-del" id="btn-del-compra" style="display:none;" onclick="delCompra()">Apagar compra</button>
   </div>
 </div>
+
+<div id="toast"></div>
 
 <!-- SISTEMA DE DIÁLOGOS (substitui prompt/confirm nativos) -->
 <div class="ov" id="dlg-ov" style="z-index:130;">
