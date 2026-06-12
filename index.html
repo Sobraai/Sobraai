@@ -166,6 +166,71 @@ body.tema-claro{--v:#16a34a;--vd:#15803d;--vg:#dcfce7;--r:#dc2626;--rg:#fee2e2;-
 body.tema-claro .brand{color:#111;}
 body.tema-claro .auth-logo-txt,body.tema-claro .auth-tit,body.tema-claro .ob-tit,body.tema-claro .mtxt,body.tema-claro .tl-data,body.tema-claro .rodape-val,body.tema-claro .sh-tit,body.tema-claro .banco-nome{color:#111;}
 body.tema-claro .btn-p,body.tema-claro .btn-salv,body.tema-claro .bnav-fab{color:#fff;}
+
+/* ═══ POLIMENTO VISUAL ═══ */
+/* Números alinhados estilo app de banco */
+.tl-saldo,.tl-item-val,.rodape-val,.dia-saldo,.lanc-val,.hero-pill-val{font-variant-numeric:tabular-nums;letter-spacing:-0.2px;}
+
+/* Header com profundidade sutil */
+.hdr{background:linear-gradient(180deg,#151515 0%,#101010 100%);box-shadow:0 1px 0 rgba(255,255,255,.03);}
+.brand{letter-spacing:-0.4px;}
+.brand span{text-shadow:0 0 18px rgba(34,197,94,.45);}
+
+/* Navegação de mês mais refinada */
+.mbtn{transition:all .15s ease;border:0.5px solid rgba(255,255,255,.05);}
+.mbtn:active{transform:scale(.92);background:var(--vg);}
+.mtxt{letter-spacing:-0.2px;}
+
+/* Timeline: hoje com brilho vivo, linha mais suave */
+.tl-dot.hj{box-shadow:0 0 0 3px rgba(34,197,94,.2),0 0 14px rgba(34,197,94,.5);animation:pulso 2.5s ease-in-out infinite;}
+@keyframes pulso{0%,100%{box-shadow:0 0 0 3px rgba(34,197,94,.2),0 0 12px rgba(34,197,94,.45);}50%{box-shadow:0 0 0 4px rgba(34,197,94,.28),0 0 20px rgba(34,197,94,.65);}}
+.tl-seg{background:linear-gradient(180deg,var(--bd),rgba(28,28,30,.4));}
+.tl-dot.neg{box-shadow:0 0 10px rgba(248,113,113,.4);}
+
+/* Itens expandidos com leve elevação */
+.tl-itens{border:0.5px solid rgba(255,255,255,.04);box-shadow:0 2px 12px rgba(0,0,0,.35);}
+.tl-item{transition:background .12s ease;}
+.tl-hdr{transition:opacity .12s ease;}
+.tl-hdr:active{opacity:.6;}
+
+/* Sheets deslizando suave de baixo */
+.ov{backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);}
+.ov.aberto .sheet{animation:sobe .28s cubic-bezier(.32,.72,.35,1);}
+@keyframes sobe{from{transform:translateY(40px);opacity:.6;}to{transform:translateY(0);opacity:1;}}
+.sheet{box-shadow:0 -8px 40px rgba(0,0,0,.5);}
+
+/* Botões com resposta tátil */
+.btn-salv,.btn-canc,.btn-del,.btn-p,.btn-add,.sh-radio,.tipo-btn{transition:all .15s ease;}
+.btn-salv:active,.btn-p:active{transform:scale(.97);}
+.btn-canc:active,.btn-del:active{transform:scale(.97);opacity:.8;}
+
+/* FAB com gradiente e sombra viva */
+.bnav-fab{background:linear-gradient(145deg,#2dd96e,#1cab4f);box-shadow:0 6px 20px rgba(34,197,94,.4),0 2px 6px rgba(0,0,0,.3);transition:all .15s ease;}
+.bnav-fab:active{transform:scale(.92);}
+
+/* Nav inferior com vidro escuro */
+.bottom-nav{background:rgba(17,17,17,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}
+.bnav-btn{transition:opacity .12s ease;}
+.bnav-btn:active{opacity:.5;}
+.bnav-btn.active .bnav-ic{filter:drop-shadow(0 0 6px rgba(34,197,94,.5));}
+
+/* Rodapé de saldo integrado */
+.rodape{background:rgba(17,17,17,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}
+
+/* Inputs com foco vivo */
+.sh-inp:focus,.sh-val:focus,.sh-sel:focus,.inp:focus{border-color:var(--v);box-shadow:0 0 0 3px rgba(34,197,94,.12);}
+
+/* Alerta de saldo negativo com presença */
+.hero-alerta{border:0.5px solid rgba(248,113,113,.25);box-shadow:0 2px 10px rgba(248,113,113,.08);}
+
+/* Scroll invisível, seleção verde */
+.content::-webkit-scrollbar{display:none;}
+.content{scrollbar-width:none;}
+::selection{background:rgba(34,197,94,.3);}
+
+/* Auth box flutuando */
+.auth-box{box-shadow:0 12px 50px rgba(0,0,0,.6);}
+.auth-logo-txt span{text-shadow:0 0 24px rgba(34,197,94,.5);}
 </style>
 </head>
 <body>
@@ -783,7 +848,7 @@ async function salvaLanc(){
   const desc=$('l-desc').value.trim();
   const dia=parseInt($('l-dia').value);
   const cartId=$('l-cart').value;
-  if(!val||!desc||!dia)return alert('Preencha todos os campos.');
+  if(!val||!desc||!dia)return dlgInfo('Faltou algo','Preencha valor, descrição e dia.');
   const categVal=$('l-categ').value;
   const dados={
     user_id:S.user.id,descricao:desc,valor:val,
@@ -800,7 +865,7 @@ async function salvaLanc(){
 
 async function delLanc(){
   if(!S.editId)return;
-  if(!confirm('Apagar este lançamento?'))return;
+  const ok=await dlgConfirm('Apagar lançamento?','','Apagar',true);if(!ok)return;
   await db.from('lancamentos').delete().eq('id',S.editId);
   await carrega();fechaSh();render();
 }
@@ -884,9 +949,9 @@ async function salvaFixoEscopo(escopo){
   const val=parseFloat($('f-val').value);
   const dia=parseInt($('f-dia').value);
   const cartId=$('f-cart').value;
-  if(!desc||!val||!dia)return alert('Preencha todos os campos.');
+  if(!desc||!val||!dia)return dlgInfo('Faltou algo','Preencha valor, descrição e dia.');
   const parcelas=S.fixoRep==='parcelado'?parseInt($('f-parcelas').value)||null:null;
-  if(S.fixoRep==='parcelado'&&!parcelas)return alert('Informe o número de parcelas.');
+  if(S.fixoRep==='parcelado'&&!parcelas)return dlgInfo('Faltou algo','Informe o número de parcelas.');
   if(!S.fixoEditId){
     await db.from('fixos').insert({
       user_id:S.user.id,descricao:desc,valor:val,tipo:S.fixoTipo,
@@ -894,7 +959,7 @@ async function salvaFixoEscopo(escopo){
       mes_inicio:S.mes+1,ano_inicio:S.ano,ativo:true,
     });
   } else if(escopo==='todos'){
-    await db.from('fixos').update({descricao:desc,valor:val,carteira_id:cartId}).eq('id',S.fixoEditId);
+    await db.from('fixos').update({descricao:desc,valor:val,carteira_id:cartId,dia}).eq('id',S.fixoEditId);
   } else if(escopo==='frente'){
     await db.from('fixos').update({mes_fim:S.fixoMesRef,ano_fim:S.fixoAnoRef}).eq('id',S.fixoEditId);
     await db.from('fixos').insert({
@@ -977,6 +1042,64 @@ function abaApp(aba){
   }
 }
 
+// ── SISTEMA DE DIÁLOGOS (telas próprias do app no lugar de prompt/confirm) ──
+let _dlgResolve=null,_dlgIds=[];
+function dlgFecha(val){
+  $('dlg-ov').classList.remove('aberto');
+  if(_dlgResolve){const r=_dlgResolve;_dlgResolve=null;r(val);}
+}
+function dlgConfirm(titulo,msg,btnTxt,danger){
+  return new Promise(res=>{
+    _dlgResolve=res;
+    $('dlg-box').innerHTML=`<div class="sh-handle"></div>
+      <div class="sh-tit">${titulo}</div>
+      ${msg?`<div class="sh-sub">${msg}</div>`:''}
+      <div class="sh-actions">
+        <button class="btn-canc" onclick="dlgFecha(false)">Cancelar</button>
+        <button class="btn-salv" style="${danger?'background:var(--r);color:#fff;':''}" onclick="dlgFecha(true)">${btnTxt||'Confirmar'}</button>
+      </div>`;
+    $('dlg-ov').classList.add('aberto');
+  });
+}
+function dlgInfo(titulo,msg){
+  return new Promise(res=>{
+    _dlgResolve=res;
+    $('dlg-box').innerHTML=`<div class="sh-handle"></div>
+      <div class="sh-tit">${titulo}</div>
+      ${msg?`<div class="sh-sub">${msg}</div>`:''}
+      <button class="btn-salv" style="width:100%;" onclick="dlgFecha(true)">Entendi</button>`;
+    $('dlg-ov').classList.add('aberto');
+  });
+}
+function dlgForm(titulo,campos,opts){
+  return new Promise(res=>{
+    _dlgResolve=res;
+    _dlgIds=campos.map(c=>c.id);
+    let h=`<div class="sh-handle"></div><div class="sh-tit">${titulo}</div>`;
+    campos.forEach(c=>{
+      h+=`<div class="sh-lbl">${c.label}</div>`;
+      const v=(c.value!==undefined&&c.value!==null)?String(c.value).replace(/"/g,'&quot;'):'';
+      if(c.type==='select'){
+        h+=`<select class="sh-sel" id="dlg-${c.id}">${c.options.map(o=>`<option value="${o.v}"${o.v===c.value?' selected':''}>${o.t}</option>`).join('')}</select>`;
+      } else {
+        h+=`<input class="sh-inp" id="dlg-${c.id}" type="${c.type||'text'}" value="${v}" placeholder="${c.placeholder||''}" ${c.type==='number'?'inputmode="decimal"':''}/>`;
+      }
+    });
+    h+=`<div class="sh-actions">
+      <button class="btn-canc" onclick="dlgFecha(null)">Cancelar</button>
+      <button class="btn-salv" onclick="dlgColeta()">Salvar</button>
+    </div>`;
+    if(opts&&opts.delTxt)h+=`<button class="btn-del" onclick="dlgFecha('__DELETE')">${opts.delTxt}</button>`;
+    $('dlg-box').innerHTML=h;
+    $('dlg-ov').classList.add('aberto');
+  });
+}
+function dlgColeta(){
+  const vals={};
+  _dlgIds.forEach(id=>{vals[id]=$('dlg-'+id).value;});
+  dlgFecha(vals);
+}
+
 // ── CATEGORIAS (100% do usuário, nada travado) ──
 function popularCategSel(selectId,selId){
   const sel=$(selectId);
@@ -988,11 +1111,13 @@ function popularCategSel(selectId,selId){
 }
 async function categChange(sel){
   if(sel.value!=='__nova')return;
-  const nome=prompt('Nome da categoria (ex: Mercado, Farmácia, Lazer):');
-  if(!nome){sel.value='';return;}
-  const emoji=prompt('Emoji da categoria (opcional):','🏷️')||'🏷️';
-  const{data,error}=await db.from('categorias').insert({user_id:S.user.id,nome:nome.trim(),emoji}).select();
-  if(error){alert('Erro ao criar categoria.');sel.value='';return;}
+  const r=await dlgForm('Nova categoria',[
+    {id:'nome',label:'Nome',type:'text',placeholder:'Ex: Mercado, Farmácia, Lazer'},
+    {id:'emoji',label:'Emoji',type:'text',value:'🏷️'},
+  ]);
+  if(!r||r==='__DELETE'||!r.nome||!r.nome.trim()){sel.value='';return;}
+  const{data,error}=await db.from('categorias').insert({user_id:S.user.id,nome:r.nome.trim(),emoji:r.emoji||'🏷️'}).select();
+  if(error){sel.value='';return;}
   await carrega();
   popularCategSel(sel.id,data&&data[0]?data[0].id:null);
 }
@@ -1001,26 +1126,38 @@ function nomeCateg(id){
   const ct=S.categorias.find(x=>x.id===id);
   return ct?`${ct.emoji} ${ct.nome}`:null;
 }
-async function gerenciarCategorias(){
-  if(!S.categorias.length){alert('Você ainda não criou categorias. Crie ao fazer um lançamento.');return;}
-  const lista=S.categorias.map((c,i)=>`${i+1}. ${c.emoji} ${c.nome}`).join('\n');
-  const escolha=prompt('Suas categorias:\n'+lista+'\n\nDigite o número para editar/apagar (ou Cancelar):');
-  if(!escolha)return;
-  const ct=S.categorias[parseInt(escolha)-1];
+function gerenciarCategorias(){
+  if(!S.categorias.length){dlgInfo('Categorias','Você ainda não criou categorias. Crie na hora de fazer um lançamento ou compra no cartão.');return;}
+  let h=`<div class="sh-handle"></div><div class="sh-tit">Minhas categorias</div><div class="sh-sub">Toque em uma para editar ou apagar</div>`;
+  S.categorias.forEach(ct=>{
+    h+=`<div onclick="editarCategoria('${ct.id}')" style="background:var(--bg3);border-radius:10px;margin-bottom:6px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
+      <span style="font-size:14px;color:var(--tm);">${ct.emoji} ${ct.nome}</span>
+      <span style="color:var(--ts);">›</span></div>`;
+  });
+  h+=`<button class="btn-canc" style="width:100%;margin-top:8px;" onclick="dlgFecha(null)">Fechar</button>`;
+  $('dlg-box').innerHTML=h;
+  $('dlg-ov').classList.add('aberto');
+}
+async function editarCategoria(id){
+  dlgFecha(null);
+  const ct=S.categorias.find(x=>x.id===id);
   if(!ct)return;
-  const novoNome=prompt('Novo nome (vazio para APAGAR a categoria):',ct.nome);
-  if(novoNome===null)return;
-  if(!novoNome.trim()){
-    if(confirm(`Apagar a categoria "${ct.nome}"? Os lançamentos dela ficam sem categoria.`)){
-      await db.from('lancamentos').update({categoria_id:null}).eq('categoria_id',ct.id);
-      await db.from('compras_cartao').update({categoria_id:null}).eq('categoria_id',ct.id);
-      await db.from('categorias').delete().eq('id',ct.id);
-      await carrega();render();
-    }
+  const r=await dlgForm('Editar categoria',[
+    {id:'nome',label:'Nome',type:'text',value:ct.nome},
+    {id:'emoji',label:'Emoji',type:'text',value:ct.emoji},
+  ],{delTxt:'Apagar categoria'});
+  if(!r)return;
+  if(r==='__DELETE'){
+    const ok=await dlgConfirm('Apagar categoria?',`Lançamentos com "${ct.nome}" ficam sem categoria. Nada mais é apagado.`,'Apagar',true);
+    if(!ok)return;
+    await db.from('lancamentos').update({categoria_id:null}).eq('categoria_id',id);
+    await db.from('compras_cartao').update({categoria_id:null}).eq('categoria_id',id);
+    await db.from('categorias').delete().eq('id',id);
+    await carrega();render();
     return;
   }
-  const novoEmoji=prompt('Emoji:',ct.emoji)||ct.emoji;
-  await db.from('categorias').update({nome:novoNome.trim(),emoji:novoEmoji}).eq('id',ct.id);
+  if(!r.nome||!r.nome.trim())return;
+  await db.from('categorias').update({nome:r.nome.trim(),emoji:r.emoji||ct.emoji}).eq('id',id);
   await carrega();render();
 }
 
@@ -1093,19 +1230,39 @@ function renderCarteiras(){
       <button onclick="editarCarteira('${cart.id}')" style="background:var(--bg3);border-radius:8px;padding:6px 12px;color:var(--ts);font-size:12px;">Editar</button>
     </div>`;}).join('');
 }
-function novaCarteira(){
-  const nome=prompt('Nome da carteira:');
-  if(!nome)return;
-  const saldo=parseFloat(prompt('Saldo atual R$:')||'0');
-  db.from('carteiras').insert({user_id:S.user.id,nome:nome.trim(),emoji:'🏦',saldo}).then(async()=>{await carrega();renderCarteiras();render();});
+async function novaCarteira(){
+  const r=await dlgForm('Nova carteira',[
+    {id:'nome',label:'Nome do banco',type:'text',placeholder:'Ex: Nubank, Caixa, Carteira'},
+    {id:'emoji',label:'Emoji',type:'text',value:'🏦'},
+    {id:'saldo',label:'Saldo atual (R$)',type:'number',placeholder:'0,00'},
+  ]);
+  if(!r||r==='__DELETE'||!r.nome||!r.nome.trim())return;
+  await db.from('carteiras').insert({user_id:S.user.id,nome:r.nome.trim(),emoji:r.emoji||'🏦',saldo:parseFloat(r.saldo)||0});
+  await carrega();renderCarteiras();render();
 }
-function editarCarteira(id){
+async function editarCarteira(id){
   const cart=S.carteiras.find(c=>c.id===id);
   if(!cart)return;
-  const nome=prompt('Nome:',cart.nome);
-  if(!nome)return;
-  const saldo=parseFloat(prompt('Saldo atual R$:',cart.saldo)||'0');
-  db.from('carteiras').update({nome:nome.trim(),saldo}).eq('id',id).then(async()=>{await carrega();renderCarteiras();render();});
+  const r=await dlgForm('Editar carteira',[
+    {id:'nome',label:'Nome',type:'text',value:cart.nome},
+    {id:'emoji',label:'Emoji',type:'text',value:cart.emoji},
+    {id:'saldo',label:'Saldo inicial (R$)',type:'number',value:cart.saldo},
+  ],{delTxt:'Apagar carteira'});
+  if(!r)return;
+  if(r==='__DELETE'){
+    const ok=await dlgConfirm('Apagar carteira?',`"${cart.nome}" será removida. Lançamentos e fixos dela ficam sem banco.`,'Apagar',true);
+    if(!ok)return;
+    await db.from('lancamentos').update({carteira_id:null}).eq('carteira_id',id);
+    await db.from('fixos').update({carteira_id:null}).eq('carteira_id',id);
+    await db.from('fixos_excecoes').update({carteira_id:null}).eq('carteira_id',id);
+    await db.from('cartoes').update({carteira_id:null}).eq('carteira_id',id);
+    await db.from('carteiras').delete().eq('id',id);
+    await carrega();renderCarteiras();render();
+    return;
+  }
+  if(!r.nome||!r.nome.trim())return;
+  await db.from('carteiras').update({nome:r.nome.trim(),emoji:r.emoji||cart.emoji,saldo:parseFloat(r.saldo)||0}).eq('id',id);
+  await carrega();renderCarteiras();render();
 }
 
 // ── CARTÕES ──
@@ -1159,36 +1316,41 @@ function renderCartoes(){
   el.innerHTML=h;
 }
 
-function novoCartao(){
-  const nome=prompt('Nome do cartão (ex: Nubank):');
-  if(!nome)return;
-  const dia=parseInt(prompt('Dia de vencimento da fatura (1-31):')||'10');
-  const cartId=S.carteiras[0]?S.carteiras[0].id:null;
-  db.from('cartoes').insert({user_id:S.user.id,nome:nome.trim(),emoji:'💳',dia_vencimento:dia,carteira_id:cartId}).then(async()=>{await carrega();renderCartoes();render();});
+async function novoCartao(){
+  if(!S.carteiras.length){await dlgInfo('Sem carteiras','Adicione um banco na aba Carteiras antes de criar um cartão.');return;}
+  const r=await dlgForm('Novo cartão',[
+    {id:'nome',label:'Nome do cartão',type:'text',placeholder:'Ex: Nubank, Inter'},
+    {id:'emoji',label:'Emoji',type:'text',value:'💳'},
+    {id:'venc',label:'Dia de vencimento da fatura',type:'number',value:10},
+    {id:'cart',label:'Fatura desconta de qual banco?',type:'select',value:S.carteiras[0].id,options:S.carteiras.map(c=>({v:c.id,t:`${c.emoji} ${c.nome}`}))},
+  ]);
+  if(!r||r==='__DELETE'||!r.nome||!r.nome.trim())return;
+  await db.from('cartoes').insert({user_id:S.user.id,nome:r.nome.trim(),emoji:r.emoji||'💳',dia_vencimento:parseInt(r.venc)||10,carteira_id:r.cart||null});
+  await carrega();renderCartoes();render();
 }
 
-function editarCartao(id){
+async function editarCartao(id){
   const ct=S.cartoes.find(c=>c.id===id);
   if(!ct)return;
-  const nome=prompt('Nome do cartão:',ct.nome);
-  if(!nome)return;
-  const dia=parseInt(prompt('Dia de vencimento (1-31):',ct.dia_vencimento)||ct.dia_vencimento);
-  // Escolher carteira de débito
-  let cartId=ct.carteira_id;
-  if(S.carteiras.length>1){
-    const lista=S.carteiras.map((c,i)=>`${i+1}. ${c.nome}`).join('\\n');
-    const escolha=parseInt(prompt('De qual banco a fatura desconta?\\n'+lista,'1')||'1');
-    cartId=S.carteiras[escolha-1]?S.carteiras[escolha-1].id:ct.carteira_id;
+  const r=await dlgForm('Editar cartão',[
+    {id:'nome',label:'Nome',type:'text',value:ct.nome},
+    {id:'emoji',label:'Emoji',type:'text',value:ct.emoji},
+    {id:'venc',label:'Dia de vencimento',type:'number',value:ct.dia_vencimento},
+    {id:'cart',label:'Fatura desconta de qual banco?',type:'select',value:ct.carteira_id,options:S.carteiras.map(c=>({v:c.id,t:`${c.emoji} ${c.nome}`}))},
+  ],{delTxt:'Apagar cartão'});
+  if(!r)return;
+  if(r==='__DELETE'){
+    const ok=await dlgConfirm('Apagar cartão?',`Todas as compras e faturas do ${ct.nome} serão apagadas junto.`,'Apagar',true);
+    if(!ok)return;
+    await db.from('faturas_edit').delete().eq('cartao_id',id);
+    await db.from('compras_cartao').delete().eq('cartao_id',id);
+    await db.from('cartoes').delete().eq('id',id);
+    await carrega();renderCartoes();render();
+    return;
   }
-  if(confirm('Salvar alterações? (Cancelar para APAGAR o cartão)')){
-    db.from('cartoes').update({nome:nome.trim(),dia_vencimento:dia,carteira_id:cartId}).eq('id',id).then(async()=>{await carrega();renderCartoes();render();});
-  } else {
-    if(confirm('Apagar este cartão e todas as compras dele?')){
-      db.from('compras_cartao').delete().eq('cartao_id',id).then(()=>{
-        db.from('cartoes').delete().eq('id',id).then(async()=>{await carrega();renderCartoes();render();});
-      });
-    }
-  }
+  if(!r.nome||!r.nome.trim())return;
+  await db.from('cartoes').update({nome:r.nome.trim(),emoji:r.emoji||ct.emoji,dia_vencimento:parseInt(r.venc)||ct.dia_vencimento,carteira_id:r.cart||null}).eq('id',id);
+  await carrega();renderCartoes();render();
 }
 
 // Ver detalhes de uma fatura
@@ -1246,17 +1408,20 @@ function renderFaturaDetalhe(){
   el.innerHTML=h;
 }
 
-function editarValorFatura(cartaoId,mes,ano){
+async function editarValorFatura(cartaoId,mes,ano){
   const atual=valorFatura(cartaoId,mes,ano);
-  const novo=prompt('Novo valor da fatura R$ (coloque 0 se não pagou nada):',atual);
-  if(novo===null)return;
-  const v=parseFloat(novo)||0;
+  const r=await dlgForm('Editar valor da fatura',[
+    {id:'valor',label:'Novo valor (R$) — coloque 0 se não vai pagar este mês',type:'number',value:atual},
+  ]);
+  if(!r||r==='__DELETE')return;
+  const v=parseFloat(r.valor)||0;
   const edit=S.faturasEdit.find(e=>e.cartao_id===cartaoId&&e.mes===mes&&e.ano===ano);
   if(edit){
-    db.from('faturas_edit').update({valor:v}).eq('id',edit.id).then(async()=>{await carrega();renderFaturaDetalhe();render();});
+    await db.from('faturas_edit').update({valor:v}).eq('id',edit.id);
   } else {
-    db.from('faturas_edit').insert({user_id:S.user.id,cartao_id:cartaoId,mes,ano,valor:v}).then(async()=>{await carrega();renderFaturaDetalhe();render();});
+    await db.from('faturas_edit').insert({user_id:S.user.id,cartao_id:cartaoId,mes,ano,valor:v});
   }
+  await carrega();renderFaturaDetalhe();render();
 }
 function resetarFatura(cartaoId,mes,ano){
   const edit=S.faturasEdit.find(e=>e.cartao_id===cartaoId&&e.mes===mes&&e.ano===ano);
@@ -1269,7 +1434,7 @@ function abreCompra(editId){
   // popular select de cartões
   $('cp-cartao').innerHTML=S.cartoes.map(c=>`<option value="${c.id}">${c.emoji} ${c.nome}</option>`).join('');
   if(!S.cartoes.length){
-    alert('Adicione um cartão primeiro (aba Cartões).');
+    dlgInfo('Sem cartões','Adicione um cartão primeiro na aba Cartões.');
     return;
   }
   if(editId){
@@ -1318,7 +1483,7 @@ async function salvaCompra(){
   const parcelas=parseInt($('cp-parcelas').value)||1;
   const categVal=$('cp-categ').value;
   const categId=(categVal&&categVal!=='__nova')?categVal:null;
-  if(!desc||!val||!dia||!cartaoId)return alert('Preencha todos os campos.');
+  if(!desc||!val||!dia||!cartaoId)return dlgInfo('Faltou algo','Preencha valor, descrição, dia e cartão.');
 
   if(S.compraEditId){
     await db.from('compras_cartao').update({descricao:desc,valor:val,dia,cartao_id:cartaoId,mes_fatura:S.compraFaturaMes,ano_fatura:S.compraFaturaAno,categoria_id:categId}).eq('id',S.compraEditId);
@@ -1342,7 +1507,7 @@ async function salvaCompra(){
 
 async function delCompra(){
   if(!S.compraEditId)return;
-  if(!confirm('Apagar esta compra?'))return;
+  const ok=await dlgConfirm('Apagar compra?','Se for parcelada, apenas esta parcela é apagada.','Apagar',true);if(!ok)return;
   await db.from('compras_cartao').delete().eq('id',S.compraEditId);
   await carrega();fechaShCompra();
   if(S.faturaView)renderFaturaDetalhe();else renderCartoes();
@@ -1362,8 +1527,8 @@ function toggleTema(){
 
 // ── LIMPAR DADOS ──
 async function limparDados(){
-  if(!confirm('Apagar TODOS os dados? Isso não pode ser desfeito.'))return;
-  if(!confirm('Tem certeza? Lançamentos, fixos e carteiras serão apagados.'))return;
+  const ok1=await dlgConfirm('Limpar todos os dados?','Lançamentos, fixos, cartões, categorias e carteiras serão apagados. Não dá para desfazer.','Apagar tudo',true);if(!ok1)return;
+  const ok2=await dlgConfirm('Tem certeza absoluta?','Essa é a última confirmação.','Sim, apagar tudo',true);if(!ok2)return;
   const uid=S.user.id;
   await db.from('fixos_excecoes').delete().eq('user_id',uid);
   await db.from('faturas_edit').delete().eq('user_id',uid);
@@ -1443,6 +1608,11 @@ async function limparDados(){
     </div>
     <button class="btn-del" id="btn-del-compra" style="display:none;" onclick="delCompra()">Apagar compra</button>
   </div>
+</div>
+
+<!-- SISTEMA DE DIÁLOGOS (substitui prompt/confirm nativos) -->
+<div class="ov" id="dlg-ov" style="z-index:130;">
+  <div class="sheet" id="dlg-box" style="padding-bottom:calc(24px + var(--sb));"></div>
 </div>
 
 <!-- MODAL ESCOPO FIXO -->
