@@ -219,13 +219,6 @@ body.tema-claro .btn-p,body.tema-claro .btn-salv,body.tema-claro .bnav-fab{color
     <div style="padding:16px;">
       <div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:16px;">Configurações</div>
       <div style="background:var(--bg2);border-radius:14px;overflow:hidden;margin-bottom:12px;">
-        <div style="padding:14px 16px;display:flex;align-items:center;gap:12px;" onclick="toggleTema()">
-          <div style="width:36px;height:36px;border-radius:10px;background:#1a1000;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🌙</div>
-          <div style="flex:1;"><div style="font-size:14px;color:#fff;">Tema escuro</div><div style="font-size:11px;color:var(--ts);margin-top:2px;" id="tema-sub">Ativado</div></div>
-          <div id="tema-toggle" style="width:40px;height:22px;border-radius:11px;background:var(--v);position:relative;flex-shrink:0;transition:background .2s;"><div id="tema-knob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;right:2px;top:2px;transition:all .2s;"></div></div>
-        </div>
-      </div>
-      <div style="background:var(--bg2);border-radius:14px;overflow:hidden;margin-bottom:12px;">
         <div style="padding:14px 16px;display:flex;align-items:center;gap:12px;" onclick="limparDados()">
           <div style="width:36px;height:36px;border-radius:10px;background:var(--rg);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🗑️</div>
           <div style="flex:1;"><div style="font-size:14px;color:var(--r);">Limpar todos os dados</div><div style="font-size:11px;color:var(--ts);margin-top:2px;">Apaga tudo e recomeça do zero</div></div>
@@ -727,13 +720,13 @@ function abreFixo(editId){
     if(fReal.parcelas){setFixoRep('parcelado');$('f-parcelas').value=fReal.parcelas;}
     else{setFixoRep('fixo');}
     $('btn-del-fixo').style.display='block';
-    $('fixo-escopo').style.display='block';
+    var _fe=document.getElementById('fixo-escopo');if(_fe)_fe.style.display='block';
   } else {
     $('sh-fixo-tit').textContent='Novo fixo / parcelado';
     setFixoTipo('saida');setFixoRep('fixo');
     $('f-desc').value='';$('f-val').value='';$('f-dia').value='';$('f-parcelas').value='';
     $('btn-del-fixo').style.display='none';
-    $('fixo-escopo').style.display='none';
+    var _fe2=document.getElementById('fixo-escopo');if(_fe2)_fe2.style.display='none';
   }
   $('sh-fixo').classList.add('aberto');
 }
