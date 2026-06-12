@@ -614,8 +614,15 @@ function fixosDoMes(m,a){
 // ── FATURAS ──
 // Valor da fatura de um cartão num mês/ano = soma das compras com mes_fatura/ano_fatura,
 // a menos que o usuário tenha editado o valor (faturas_edit).
+function faturaEdit(cartaoId,mes,ano){
+  return S.faturasEdit.find(e=>e.cartao_id===cartaoId&&e.mes===mes&&e.ano===ano);
+}
+function faturaPaga(cartaoId,mes,ano){
+  const e=faturaEdit(cartaoId,mes,ano);
+  return !!(e&&e.pago);
+}
 function valorFatura(cartaoId,mes,ano){
-  const edit=S.faturasEdit.find(e=>e.cartao_id===cartaoId&&e.mes===mes&&e.ano===ano);
+  const edit=faturaEdit(cartaoId,mes,ano);
   if(edit)return parseFloat(edit.valor);
   const comprasFat=S.compras.filter(c=>c.cartao_id===cartaoId&&c.mes_fatura===mes&&c.ano_fatura===ano);
   return comprasFat.reduce((s,c)=>s+parseFloat(c.valor),0);
@@ -626,7 +633,7 @@ function faturasDoMes(m,a){
   S.cartoes.forEach(cart=>{
     const v=valorFatura(cart.id,m+1,a);
     if(v>0){
-      result.push({cartao:cart,valor:v,dia:cart.dia_vencimento,mes:m+1,ano:a});
+      result.push({cartao:cart,valor:v,dia:cart.dia_vencimento,mes:m+1,ano:a,paga:faturaPaga(cart.id,m+1,a)});
     }
   });
   return result;
@@ -675,6 +682,7 @@ function saldoDia(d,m,a){
     while(fa<a||(fa===a&&fm<=m)){
       const faturas=faturasDoMes(fm,fa);
       faturas.forEach(fat=>{
+        if(fat.paga)return; // paga vira lançamento, não desconta duas vezes
         const limDia=fa===a&&fm===m?d:new Date(fa,fm+1,0).getDate();
         if(fat.dia<=limDia)deltaFaturas-=fat.valor;
       });
@@ -724,7 +732,7 @@ function render(){
     const isFutD=isFut||(isAtual&&d>HJD);
     const dLancs=dm.filter(l=>l.dia===d);
     const dFixos=fixesMes.filter(f=>f.dia===d);
-    const dFaturas=faturasMes.filter(f=>f.dia===d);
+    const dFaturas=faturasMes.filter(f=>f.dia===d&&!f.paga);
     const temItem=dLancs.length||dFixos.length||dFaturas.length;
     const saldo=saldoDia(d,m,a);
     const isNeg=saldo<0;
@@ -1262,7 +1270,7 @@ function saldoCarteira(cartId,limD,limM,limA){
       const fa=Math.floor(key/100),fm=key%100;
       const v=valorFatura(ct.id,fm+1,fa);
       const ord=fa*10000+(fm+1)*100+ct.dia_vencimento;
-      if(v>0&&ord<=limOrd)saldo-=v;
+      if(v>0&&ord<=limOrd&&!faturaPaga(ct.id,fm+1,fa))saldo-=v;
     });
   });
   return saldo;
@@ -1362,7 +1370,7 @@ function renderCartoes(){
         </div>
         <div onclick="verFatura('${ct.id}',${cm+1},${ca})" style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--bd);display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
           <span style="font-size:12px;color:var(--ts);">Fatura de ${MESES[cm]}</span>
-          <span style="font-size:14px;font-weight:600;color:${v>0?'var(--r)':'var(--ts)'};">R$ ${brl(v)} ›</span>
+          <span style="font-size:14px;font-weight:600;color:${faturaPaga(ct.id,cm+1,ca)?'var(--v)':v>0?'var(--r)':'var(--ts)'};">${faturaPaga(ct.id,cm+1,ca)?'✓ paga · ':''}R$ ${brl(v)} ›</span>
         </div>
       </div>`;
     });
@@ -1430,7 +1438,8 @@ function renderFaturaDetalhe(){
   if(!ct){S.faturaView=null;renderCartoes();return;}
   const comprasFat=S.compras.filter(c=>c.cartao_id===cartaoId&&c.mes_fatura===mes&&c.ano_fatura===ano);
   const vTotal=valorFatura(cartaoId,mes,ano);
-  const edit=S.faturasEdit.find(e=>e.cartao_id===cartaoId&&e.mes===mes&&e.ano===ano);
+  const edit=faturaEdit(cartaoId,mes,ano);
+  const pago=!!(edit&&edit.pago);
   let h=`<div style="padding:16px;">
     <button onclick="voltarCartoes()" style="background:none;color:var(--v);font-size:14px;padding:4px 0;margin-bottom:8px;">‹ Voltar aos cartões</button>
     <div style="font-size:20px;font-weight:700;color:#fff;">${ct.emoji} Fatura ${ct.nome}</div>
@@ -1442,10 +1451,16 @@ function renderFaturaDetalhe(){
       </div>
       <button onclick="mudaFaturaView(1)" style="width:34px;height:34px;border-radius:9px;background:var(--bg3);color:var(--v);font-size:16px;">›</button>
     </div>
-    <div style="font-size:26px;font-weight:800;color:${vTotal>0?'var(--r)':'var(--ts)'};margin:4px 0;">R$ ${brl(vTotal)}</div>`;
-  if(edit)h+=`<div style="font-size:11px;color:#fbbf24;margin-bottom:12px;">⚠ Valor editado manualmente (compras somam R$ ${brl(comprasFat.reduce((s,c)=>s+parseFloat(c.valor),0))})</div>`;
-  h+=`<button onclick="editarValorFatura('${cartaoId}',${mes},${ano})" style="background:var(--bg3);border-radius:10px;padding:10px;width:100%;color:var(--tm);font-size:13px;font-weight:600;margin-bottom:8px;">✏️ Editar valor da fatura</button>`;
-  if(edit)h+=`<button onclick="resetarFatura('${cartaoId}',${mes},${ano})" style="background:transparent;border:1px solid var(--bd);border-radius:10px;padding:10px;width:100%;color:var(--ts);font-size:12px;margin-bottom:8px;">Voltar ao valor automático</button>`;
+    <div style="font-size:26px;font-weight:800;color:${pago?'var(--v)':vTotal>0?'var(--r)':'var(--ts)'};margin:4px 0;">R$ ${brl(vTotal)}</div>`;
+  if(pago){
+    h+=`<div style="background:var(--vg);border:0.5px solid rgba(34,197,94,.3);border-radius:10px;padding:10px 12px;font-size:12.5px;font-weight:600;color:var(--v);margin-bottom:8px;">✓ Fatura paga — o pagamento está no calendário como lançamento</div>`;
+    h+=`<button onclick="desfazerPagamento('${cartaoId}',${mes},${ano})" style="background:transparent;border:1px solid var(--bd);border-radius:10px;padding:10px;width:100%;color:var(--ts);font-size:12px;margin-bottom:8px;">Desfazer pagamento</button>`;
+  } else {
+    if(vTotal>0)h+=`<button onclick="pagarFatura('${cartaoId}',${mes},${ano})" style="background:var(--v);border-radius:10px;padding:12px;width:100%;color:#000;font-size:14px;font-weight:700;margin-bottom:8px;">💸 Pagar fatura</button>`;
+    if(edit)h+=`<div style="font-size:11px;color:#fbbf24;margin-bottom:8px;">⚠ Valor editado manualmente (compras somam R$ ${brl(comprasFat.reduce((s,c)=>s+parseFloat(c.valor),0))})</div>`;
+    h+=`<button onclick="editarValorFatura('${cartaoId}',${mes},${ano})" style="background:var(--bg3);border-radius:10px;padding:10px;width:100%;color:var(--tm);font-size:13px;font-weight:600;margin-bottom:8px;">✏️ Editar valor da fatura</button>`;
+    if(edit)h+=`<button onclick="resetarFatura('${cartaoId}',${mes},${ano})" style="background:transparent;border:1px solid var(--bd);border-radius:10px;padding:10px;width:100%;color:var(--ts);font-size:12px;margin-bottom:8px;">Voltar ao valor automático</button>`;
+  }
   h+=`<div style="font-size:12px;font-weight:700;color:var(--ts);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 8px;">Compras (${comprasFat.length})</div>`;
   if(!comprasFat.length){
     h+='<div style="text-align:center;padding:20px;color:var(--ts);font-size:13px;">Nenhuma compra nesta fatura.</div>';
@@ -1470,7 +1485,7 @@ async function editarValorFatura(cartaoId,mes,ano){
   ]);
   if(!r||r==='__DELETE')return;
   const v=parseFloat(r.valor)||0;
-  const edit=S.faturasEdit.find(e=>e.cartao_id===cartaoId&&e.mes===mes&&e.ano===ano);
+  const edit=faturaEdit(cartaoId,mes,ano);
   if(edit){
     await db.from('faturas_edit').update({valor:v}).eq('id',edit.id);
   } else {
@@ -1479,8 +1494,41 @@ async function editarValorFatura(cartaoId,mes,ano){
   await carrega();renderFaturaDetalhe();render();
 }
 function resetarFatura(cartaoId,mes,ano){
-  const edit=S.faturasEdit.find(e=>e.cartao_id===cartaoId&&e.mes===mes&&e.ano===ano);
+  const edit=faturaEdit(cartaoId,mes,ano);
   if(edit)db.from('faturas_edit').delete().eq('id',edit.id).then(async()=>{await carrega();renderFaturaDetalhe();render();});
+}
+
+// Pagar fatura: você escolhe o banco, o valor e o dia — vira um lançamento normal
+async function pagarFatura(cartaoId,mes,ano){
+  const ct=S.cartoes.find(x=>x.id===cartaoId);
+  if(!ct)return;
+  if(!S.carteiras.length){await dlgInfo('Sem bancos','Cadastre um banco na aba Carteiras para pagar a fatura.');return;}
+  const v=valorFatura(cartaoId,mes,ano);
+  const r=await dlgForm('Pagar fatura '+ct.nome,[
+    {id:'banco',label:'Sai de qual banco?',type:'select',value:ct.carteira_id||S.carteiras[0].id,options:S.carteiras.map(x=>({v:x.id,t:`${x.emoji} ${x.nome}`}))},
+    {id:'valor',label:'Valor pago (R$)',type:'number',value:v},
+    {id:'dia',label:'Dia do pagamento',type:'number',value:ct.dia_vencimento},
+  ]);
+  if(!r||r==='__DELETE')return;
+  const valorPago=parseFloat(r.valor)||0;
+  const dia=parseInt(r.dia)||ct.dia_vencimento;
+  if(valorPago<=0){await dlgInfo('Valor inválido','Para zerar a fatura sem pagar, use "Editar valor da fatura".');return;}
+  const{data}=await db.from('lancamentos').insert({user_id:S.user.id,descricao:'Fatura '+ct.nome,valor:valorPago,tipo:'saida',dia,mes,ano,carteira_id:r.banco}).select();
+  const lid=data&&data[0]?data[0].id:null;
+  const edit=faturaEdit(cartaoId,mes,ano);
+  if(edit)await db.from('faturas_edit').update({pago:true,valor:valorPago,lancamento_id:lid}).eq('id',edit.id);
+  else await db.from('faturas_edit').insert({user_id:S.user.id,cartao_id:cartaoId,mes,ano,valor:valorPago,pago:true,lancamento_id:lid});
+  await carrega();renderFaturaDetalhe();render();
+}
+
+async function desfazerPagamento(cartaoId,mes,ano){
+  const edit=faturaEdit(cartaoId,mes,ano);
+  if(!edit)return;
+  const ok=await dlgConfirm('Desfazer pagamento?','O lançamento do pagamento será apagado e a fatura volta a descontar automaticamente no vencimento.','Desfazer',true);
+  if(!ok)return;
+  if(edit.lancamento_id)await db.from('lancamentos').delete().eq('id',edit.lancamento_id);
+  await db.from('faturas_edit').delete().eq('id',edit.id);
+  await carrega();renderFaturaDetalhe();render();
 }
 
 // ── COMPRA NO CARTÃO ──
