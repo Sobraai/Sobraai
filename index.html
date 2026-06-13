@@ -280,6 +280,44 @@ body.claro .wpp-btn{color:#fff;}
 body.claro .ov{background:rgba(0,0,0,.35);}
 /* Transição suave entre temas */
 body,.hdr,.bottom-nav,.rodape,.sheet,.tl-itens,.auth-box,.content>div{transition:background .25s ease,background-color .25s ease,border-color .25s ease;}
+
+/* ONBOARDING dots */
+.ob-dots{display:flex;gap:8px;justify-content:center;margin-bottom:20px;}
+.ob-dot{width:8px;height:8px;border-radius:50%;background:var(--bd);transition:all .25s ease;}
+.ob-dot.on{background:var(--v);width:22px;border-radius:4px;}
+.ob-conta-row{display:flex;gap:8px;margin-bottom:8px;align-items:center;}
+.ob-conta-row input{margin-bottom:0;}
+
+/* RESUMO DO MÊS */
+.resumo{background:linear-gradient(145deg,var(--bg2),var(--bg3));border:0.5px solid var(--bd);border-radius:18px;padding:18px;margin:20px 0 8px;box-shadow:0 4px 20px rgba(0,0,0,.25);}
+.resumo-tit{font-size:13px;font-weight:700;color:var(--tit);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;}
+.resumo-linha{display:flex;justify-content:space-between;align-items:center;padding:7px 0;}
+.resumo-lbl{font-size:14px;color:var(--tm);}
+.resumo-val{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;}
+.resumo-val.pos{color:var(--v);}
+.resumo-val.neg{color:var(--r);}
+.resumo-sobra{border-top:0.5px solid var(--bd);margin-top:6px;padding-top:12px;}
+.resumo-sobra .resumo-lbl{font-weight:700;font-size:15px;color:var(--tit);}
+.resumo-sobra .resumo-val{font-size:18px;}
+.resumo-sub{font-size:11px;font-weight:700;color:var(--ts);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 10px;}
+.resumo-cat{margin-bottom:11px;}
+.resumo-cat-top{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--tm);margin-bottom:5px;}
+.resumo-bar{height:6px;background:var(--bg);border-radius:3px;overflow:hidden;}
+.resumo-bar-fill{height:100%;background:linear-gradient(90deg,var(--r),#fb7185);border-radius:3px;transition:width .5s cubic-bezier(.32,.72,.35,1);}
+
+/* CARTEIRAS premium */
+.cart-hero{background:linear-gradient(145deg,var(--v),var(--vd));border-radius:18px;padding:20px;margin-bottom:16px;box-shadow:0 8px 28px rgba(34,197,94,.28);}
+.cart-hero-lbl{font-size:11px;color:rgba(255,255,255,.85);text-transform:uppercase;letter-spacing:.06em;font-weight:600;}
+.cart-hero-val{font-size:32px;font-weight:800;color:#fff;line-height:1.1;margin-top:4px;letter-spacing:-0.5px;font-variant-numeric:tabular-nums;}
+.cart-hero-fim{font-size:12px;color:rgba(255,255,255,.85);margin-top:8px;}
+.cart-hero-fim strong{color:#fff;}
+.cart-card{background:var(--bg2);border-radius:14px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:14px;border:0.5px solid var(--bd);cursor:pointer;transition:transform .12s ease,background .12s ease;}
+.cart-card:active{transform:scale(.985);background:var(--bg3);}
+.cart-emoji{width:44px;height:44px;border-radius:12px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.cart-nome{font-size:14px;font-weight:600;color:var(--tit);}
+.cart-saldo{font-size:18px;font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums;letter-spacing:-0.3px;}
+.cart-meta{font-size:11px;color:var(--ts);margin-top:3px;}
+body.claro .cart-hero-val,body.claro .cart-hero-lbl,body.claro .cart-hero-fim,body.claro .cart-hero-fim strong{color:#fff;}
 </style>
 </head>
 <body>
@@ -302,12 +340,45 @@ body,.hdr,.bottom-nav,.rodape,.sheet,.tl-itens,.auth-box,.content>div{transition
 <!-- ONBOARDING -->
 <div id="scr-ob" class="scr">
   <div class="ob-wrap">
-    <div class="ob-tit">Quanto você tem<br>hoje?</div>
-    <div class="ob-sub">Informe seus bancos e o saldo atual. Só isso — depois é só lançar.</div>
-    <div id="ob-bancos"></div>
-    <button class="btn-add" onclick="obAddBanco()">+ Adicionar banco ou carteira</button>
-    <div class="ob-foot">
-      <button class="btn-p" onclick="obFin()">Começar →</button>
+    <div class="ob-dots"><span class="ob-dot on" id="obd-1"></span><span class="ob-dot" id="obd-2"></span><span class="ob-dot" id="obd-3"></span></div>
+
+    <!-- PASSO 1: bancos -->
+    <div id="ob-passo-1">
+      <div class="ob-tit">Quanto você tem<br>hoje?</div>
+      <div class="ob-sub">Informe seus bancos e o saldo atual. Só isso — depois é só lançar.</div>
+      <div id="ob-bancos"></div>
+      <button class="btn-add" onclick="obAddBanco()">+ Adicionar banco ou carteira</button>
+      <div class="ob-foot">
+        <button class="btn-p" onclick="obFin()">Continuar →</button>
+      </div>
+    </div>
+
+    <!-- PASSO 2: renda -->
+    <div id="ob-passo-2" style="display:none;">
+      <div class="ob-tit">De onde vem<br>seu dinheiro?</div>
+      <div class="ob-sub">Sua renda principal entra todo mês no calendário, sozinha. Você edita quando quiser.</div>
+      <div class="ob-lbl">Descrição</div>
+      <input class="sh-inp" type="text" id="ob-renda-desc" value="Salário"/>
+      <div class="ob-lbl">Valor (R$)</div>
+      <input class="sh-val" type="number" id="ob-renda-val" placeholder="0,00" inputmode="decimal"/>
+      <div class="ob-lbl">Que dia cai?</div>
+      <input class="sh-inp" type="number" id="ob-renda-dia" placeholder="Ex: 5" min="1" max="31" inputmode="numeric"/>
+      <div class="ob-foot">
+        <button class="btn-p" onclick="obFinRenda()">Continuar →</button>
+        <button class="btn-add" style="margin-top:8px;border:none;" onclick="obStep(3)">Pular — não tenho renda fixa</button>
+      </div>
+    </div>
+
+    <!-- PASSO 3: contas do mês -->
+    <div id="ob-passo-3" style="display:none;">
+      <div class="ob-tit">Quais contas você<br>paga todo mês?</div>
+      <div class="ob-sub">Aluguel, internet, luz... Elas entram sozinhas em todos os meses. Pode pular e cadastrar depois.</div>
+      <div id="ob-contas"></div>
+      <button class="btn-add" onclick="obAddConta()">+ Adicionar conta</button>
+      <div class="ob-foot">
+        <button class="btn-p" onclick="obFinContas()">Montar meu mês 🎉</button>
+        <button class="btn-add" style="margin-top:8px;border:none;" onclick="obTermina()">Pular por enquanto</button>
+      </div>
     </div>
   </div>
 </div>
@@ -644,19 +715,74 @@ function obAddBanco(){
 }
 function obDel(i){S.obBancos.splice(i,1);obRender();}
 
+function obStep(n){
+  [1,2,3].forEach(i=>{
+    $('ob-passo-'+i).style.display=i===n?'block':'none';
+    $('obd-'+i).classList.toggle('on',i<=n);
+  });
+  if(n===3&&!S.obContas)obInitContas();
+}
+
 async function obFin(){
   const validos=S.obBancos.filter(b=>b.nome.trim());
-  if(!validos.length)return alert('Adicione pelo menos um banco.');
+  if(!validos.length)return dlgInfo('Faltou o banco','Adicione pelo menos um banco ou carteira.');
   for(const b of validos){
     const{error}=await db.from('carteiras').insert({
       user_id:S.user.id,nome:b.nome.trim(),
       emoji:b.emoji,saldo:parseFloat(b.saldo)||0,
     });
-    if(error){alert('Erro ao salvar: '+error.message);return;}
+    if(error){await dlgInfo('Erro ao salvar',error.message);return;}
   }
   await carrega();
+  obStep(2);
+}
+
+async function obFinRenda(){
+  const desc=$('ob-renda-desc').value.trim()||'Salário';
+  const val=parseFloat($('ob-renda-val').value);
+  const dia=parseInt($('ob-renda-dia').value);
+  if(!val||!dia)return dlgInfo('Faltou algo','Informe o valor e o dia que a renda cai — ou toque em "Pular".');
+  await db.from('fixos').insert({
+    user_id:S.user.id,descricao:desc,valor:val,tipo:'entrada',dia,
+    carteira_id:S.carteiras[0]?S.carteiras[0].id:null,parcelas:null,
+    mes_inicio:HJM+1,ano_inicio:HJA,ativo:true,
+  });
+  obStep(3);
+}
+
+function obInitContas(){
+  S.obContas=[{nome:'',valor:'',dia:''}];
+  obRenderContas();
+}
+function obRenderContas(){
+  $('ob-contas').innerHTML=S.obContas.map((ct,i)=>`
+    <div class="ob-conta-row">
+      <input class="sh-inp" style="flex:2;" type="text" placeholder="Ex: Aluguel" value="${ct.nome}" oninput="S.obContas[${i}].nome=this.value"/>
+      <input class="sh-inp" style="flex:1.4;" type="number" placeholder="R$" inputmode="decimal" value="${ct.valor}" oninput="S.obContas[${i}].valor=this.value"/>
+      <input class="sh-inp" style="flex:1;" type="number" placeholder="Dia" min="1" max="31" inputmode="numeric" value="${ct.dia}" oninput="S.obContas[${i}].dia=this.value"/>
+    </div>`).join('');
+}
+function obAddConta(){
+  S.obContas.push({nome:'',valor:'',dia:''});
+  obRenderContas();
+}
+async function obFinContas(){
+  const validas=S.obContas.filter(ct=>ct.nome.trim()&&parseFloat(ct.valor)&&parseInt(ct.dia));
+  for(const ct of validas){
+    await db.from('fixos').insert({
+      user_id:S.user.id,descricao:ct.nome.trim(),valor:parseFloat(ct.valor),tipo:'saida',
+      dia:parseInt(ct.dia),carteira_id:S.carteiras[0]?S.carteiras[0].id:null,parcelas:null,
+      mes_inicio:HJM+1,ano_inicio:HJA,ativo:true,
+    });
+  }
+  await obTermina(validas.length);
+}
+async function obTermina(qtd){
+  await carrega();
+  S._scrollHoje=true;
   mostrar('scr-app');
   render();
+  toast(qtd?'🎉 Seu mês está montado!':'✓ Pronto! Toque no + para lançar');
 }
 
 // ── SALDO ──
@@ -907,6 +1033,50 @@ function render(){
 
     h+=`</div></div></div>`;
   }
+  // ── RESUMO DO MÊS (estilo planilha, por categoria) ──
+  let entrouTot=0,saiuTot=0;
+  const porCateg={};
+  const addCateg=(catId,valor)=>{
+    const k=catId||'__sem';
+    porCateg[k]=(porCateg[k]||0)+valor;
+  };
+  dm.forEach(l=>{
+    if(l.tipo==='entrada')entrouTot+=parseFloat(l.valor);
+    else{saiuTot+=parseFloat(l.valor);addCateg(l.categoria_id,parseFloat(l.valor));}
+  });
+  fixesMes.forEach(f=>{
+    if(f.tipo==='entrada')entrouTot+=parseFloat(f.valor);
+    else{saiuTot+=parseFloat(f.valor);addCateg(f.categoria_id,parseFloat(f.valor));}
+  });
+  faturasMes.forEach(fat=>{
+    if(fat.paga)return;
+    saiuTot+=parseFloat(fat.valor);
+    addCateg('__fatura',parseFloat(fat.valor));
+  });
+  const sobrou=entrouTot-saiuTot;
+  if(entrouTot>0||saiuTot>0){
+    h+=`<div class="resumo">
+      <div class="resumo-tit">Resumo de ${MESES[m]}</div>
+      <div class="resumo-linha"><span class="resumo-lbl">Entrou</span><span class="resumo-val pos">+R$ ${brl(entrouTot)}</span></div>
+      <div class="resumo-linha"><span class="resumo-lbl">Saiu</span><span class="resumo-val neg">-R$ ${brl(saiuTot)}</span></div>
+      <div class="resumo-linha resumo-sobra"><span class="resumo-lbl">${sobrou<0?'Faltou':'Sobrou'}</span><span class="resumo-val ${sobrou<0?'neg':'pos'}">${sobrou<0?'-':''}R$ ${brl(Math.abs(sobrou))}</span></div>`;
+    const cats=Object.entries(porCateg).sort((a,b)=>b[1]-a[1]);
+    if(cats.length){
+      h+=`<div class="resumo-sub">Pra onde foi</div>`;
+      cats.forEach(([k,v])=>{
+        let nome;
+        if(k==='__sem')nome='<span style="color:var(--ts)">Sem categoria</span>';
+        else if(k==='__fatura')nome='💳 Faturas de cartão';
+        else nome=nomeCateg(k)||'<span style="color:var(--ts)">Sem categoria</span>';
+        const pct=saiuTot>0?Math.round(v/saiuTot*100):0;
+        h+=`<div class="resumo-cat">
+          <div class="resumo-cat-top"><span>${nome}</span><span class="resumo-val neg">R$ ${brl(v)}</span></div>
+          <div class="resumo-bar"><div class="resumo-bar-fill" style="width:${pct}%"></div></div>
+        </div>`;
+      });
+    }
+    h+=`</div>`;
+  }
   if(!h)h=`<div style="text-align:center;padding:40px 16px;color:var(--ts);font-size:14px;">Nenhum lançamento neste mês.<br>Toque em <strong>+</strong> para começar.</div>`;
   $('content').innerHTML=h;
   // Expandir hoje automaticamente
@@ -1055,12 +1225,14 @@ function abreFixo(editId){
     renderFixoCartSel(excEdit?excEdit.carteira_id:fReal.carteira_id);
     if(fReal.parcelas){setFixoRep('parcelado');$('f-parcelas').value=fReal.parcelas;}
     else{setFixoRep('fixo');}
+    popularCategSel('f-categ',(excEdit&&excEdit.categoria_id!==undefined)?excEdit.categoria_id:(fReal.categoria_id||null));
     $('btn-del-fixo').style.display='block';
     var _fe=document.getElementById('fixo-escopo');if(_fe)_fe.style.display='block';
   } else {
     $('sh-fixo-tit').textContent='Novo fixo / parcelado';
     setFixoTipo('saida');setFixoRep('fixo');
     $('f-desc').value='';$('f-val').value='';$('f-dia').value='';$('f-parcelas').value='';
+    popularCategSel('f-categ',null);
     $('btn-del-fixo').style.display='none';
     var _fe2=document.getElementById('fixo-escopo');if(_fe2)_fe2.style.display='none';
   }
@@ -1109,27 +1281,29 @@ async function salvaFixoEscopo(escopo){
   const val=parseFloat($('f-val').value);
   const dia=parseInt($('f-dia').value);
   const cartId=$('f-cart').value;
+  const cgVal=$('f-categ')?$('f-categ').value:'';
+  const categId=(cgVal&&cgVal!=='__nova')?cgVal:null;
   if(!desc||!val||!dia)return dlgInfo('Faltou algo','Preencha valor, descrição e dia.');
   const parcelas=S.fixoRep==='parcelado'?parseInt($('f-parcelas').value)||null:null;
   if(S.fixoRep==='parcelado'&&!parcelas)return dlgInfo('Faltou algo','Informe o número de parcelas.');
   if(!S.fixoEditId){
     await db.from('fixos').insert({
       user_id:S.user.id,descricao:desc,valor:val,tipo:S.fixoTipo,
-      dia,carteira_id:cartId,parcelas,
+      dia,carteira_id:cartId,parcelas,categoria_id:categId,
       mes_inicio:S.mes+1,ano_inicio:S.ano,ativo:true,
     });
   } else if(escopo==='todos'){
-    await db.from('fixos').update({descricao:desc,valor:val,carteira_id:cartId,dia}).eq('id',S.fixoEditId);
+    await db.from('fixos').update({descricao:desc,valor:val,carteira_id:cartId,dia,categoria_id:categId}).eq('id',S.fixoEditId);
   } else if(escopo==='frente'){
     await db.from('fixos').update({mes_fim:S.fixoMesRef,ano_fim:S.fixoAnoRef}).eq('id',S.fixoEditId);
     await db.from('fixos').insert({
       user_id:S.user.id,descricao:desc,valor:val,tipo:S.fixoTipo,
-      dia,carteira_id:cartId,parcelas,
+      dia,carteira_id:cartId,parcelas,categoria_id:categId,
       mes_inicio:S.fixoMesRef,ano_inicio:S.fixoAnoRef,ativo:true,
     });
   } else {
     const excExist=S.excecoes.find(e=>e.fixo_id===S.fixoEditId&&e.mes===S.fixoMesRef&&e.ano===S.fixoAnoRef&&e.tipo==='editado');
-    const excDados={user_id:S.user.id,fixo_id:S.fixoEditId,mes:S.fixoMesRef,ano:S.fixoAnoRef,tipo:'editado',valor:val,descricao:desc,carteira_id:cartId};
+    const excDados={user_id:S.user.id,fixo_id:S.fixoEditId,mes:S.fixoMesRef,ano:S.fixoAnoRef,tipo:'editado',valor:val,descricao:desc,carteira_id:cartId,categoria_id:categId};
     if(excExist){await db.from('fixos_excecoes').update(excDados).eq('id',excExist.id);}
     else{await db.from('fixos_excecoes').insert(excDados);}
   }
@@ -1385,19 +1559,28 @@ function renderCarteiras(){
   const lista=$('lista-carteiras');
   if(!lista)return;
   const ultimoDia=new Date(HJA,HJM+1,0).getDate();
-  lista.innerHTML=S.carteiras.map(cart=>{
+  const totalHoje=S.carteiras.reduce((s,c)=>s+saldoCarteira(c.id),0);
+  const totalFim=S.carteiras.reduce((s,c)=>s+saldoCarteira(c.id,ultimoDia,HJM,HJA),0);
+  let h=`<div class="cart-hero">
+    <div class="cart-hero-lbl">Tudo somado, você tem hoje</div>
+    <div class="cart-hero-val" style="color:${totalHoje<0?'var(--r)':'var(--tit)'}">${totalHoje<0?'- ':''}R$ ${Number(Math.abs(totalHoje)).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+    <div class="cart-hero-fim">Previsão fim do mês: <strong style="color:${totalFim<0?'var(--r)':'var(--v)'}">${totalFim<0?'-':''}R$ ${Number(Math.abs(totalFim)).toLocaleString('pt-BR',{minimumFractionDigits:2})}</strong></div>
+  </div>`;
+  h+=S.carteiras.map(cart=>{
     const hoje=saldoCarteira(cart.id);
     const fimMes=saldoCarteira(cart.id,ultimoDia,HJM,HJA);
+    const variou=fimMes-hoje;
     return `
-    <div style="background:var(--bg2);border-radius:14px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px;border:0.5px solid var(--bd);">
-      <div style="font-size:24px;">${cart.emoji}</div>
-      <div style="flex:1;">
-        <div style="font-size:14px;font-weight:500;color:var(--tit);">${cart.nome}</div>
-        <div style="font-size:15px;font-weight:700;color:${hoje<0?'var(--r)':'var(--v)'};margin-top:2px;">${hoje<0?'-':''}R$ ${Number(Math.abs(hoje)).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
-        <div style="font-size:10px;color:${fimMes<0?'var(--r)':'var(--ts)'};margin-top:2px;">fim do mês: ${fimMes<0?'-':''}R$ ${Number(Math.abs(fimMes)).toLocaleString('pt-BR',{minimumFractionDigits:2})} · início: R$ ${Number(cart.saldo).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+    <div class="cart-card" onclick="editarCarteira('${cart.id}')">
+      <div class="cart-emoji">${cart.emoji}</div>
+      <div style="flex:1;min-width:0;">
+        <div class="cart-nome">${cart.nome}</div>
+        <div class="cart-saldo" style="color:${hoje<0?'var(--r)':'var(--v)'}">${hoje<0?'-':''}R$ ${Number(Math.abs(hoje)).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+        <div class="cart-meta">fim do mês ${fimMes<0?'-':''}R$ ${Number(Math.abs(fimMes)).toLocaleString('pt-BR',{minimumFractionDigits:2})}${variou!==0?` <span style="color:${variou<0?'var(--r)':'var(--v)'}">(${variou<0?'↓':'↑'} R$ ${Number(Math.abs(variou)).toLocaleString('pt-BR',{minimumFractionDigits:2})})</span>`:''}</div>
       </div>
-      <button onclick="editarCarteira('${cart.id}')" style="background:var(--bg3);border-radius:8px;padding:6px 12px;color:var(--ts);font-size:12px;">Editar</button>
+      <span style="color:var(--ts);font-size:18px;">›</span>
     </div>`;}).join('');
+  lista.innerHTML=h;
 }
 async function novaCarteira(){
   const r=await dlgForm('Nova carteira',[
@@ -1778,6 +1961,8 @@ async function limparDados(){
     <input class="sh-val" type="number" id="f-val" placeholder="0,00" inputmode="decimal"/>
     <div class="sh-lbl">Banco</div>
     <select class="sh-sel" id="f-cart"></select>
+    <div class="sh-lbl">Categoria (opcional)</div>
+    <select class="sh-sel" id="f-categ" onchange="categChange(this)"></select>
     <div class="sh-lbl">Dia do mês</div>
     <input class="sh-inp" type="number" id="f-dia" placeholder="Ex: 5" min="1" max="31" inputmode="numeric"/>
     <div class="sh-lbl">Tipo</div>
