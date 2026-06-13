@@ -704,7 +704,7 @@ async function carrega(){
     db.from('cartoes').select('*').eq('user_id',S.user.id),
     db.from('compras_cartao').select('*').eq('user_id',S.user.id),
     db.from('faturas_edit').select('*').eq('user_id',S.user.id),
-    db.from('categorias').select('*').eq('user_id',S.user.id).order('nome'),
+    db.from('categorias').select('*').eq('user_id',S.user.id).order('tipo').order('nome'),
   ]);
   S.carteiras=c.data||[];
   S.lancs=l.data||[];
@@ -714,6 +714,30 @@ async function carrega(){
   S.compras=cp.data||[];
   S.faturasEdit=fe.data||[];
   S.categorias=cg.data||[];
+  await seedCategorias();
+}
+
+// Cria categorias básicas na primeira vez (modelo A: já vêm prontas, cliente edita/apaga)
+const CATEG_BASE=[
+  {nome:'Salário',emoji:'💰',tipo:'entrada'},
+  {nome:'Renda extra',emoji:'💵',tipo:'entrada'},
+  {nome:'Aluguel recebido',emoji:'🏠',tipo:'entrada'},
+  {nome:'Mercado',emoji:'🛒',tipo:'saida'},
+  {nome:'Moradia',emoji:'🏠',tipo:'saida'},
+  {nome:'Transporte',emoji:'🚗',tipo:'saida'},
+  {nome:'Saúde',emoji:'💊',tipo:'saida'},
+  {nome:'Alimentação',emoji:'🍔',tipo:'saida'},
+  {nome:'Contas',emoji:'📱',tipo:'saida'},
+  {nome:'Lazer',emoji:'🎉',tipo:'saida'},
+  {nome:'Vestuário',emoji:'👕',tipo:'saida'},
+  {nome:'Educação',emoji:'📚',tipo:'saida'},
+];
+async function seedCategorias(){
+  if(S.categorias.length>0)return; // já tem categorias (próprias ou semeadas antes)
+  try{localStorage.getItem('sobra_seed');}catch(e){}
+  const rows=CATEG_BASE.map(x=>({user_id:S.user.id,nome:x.nome,emoji:x.emoji,tipo:x.tipo}));
+  const{data}=await db.from('categorias').insert(rows).select();
+  if(data)S.categorias=data;
 }
 
 // ── ONBOARDING ──
@@ -757,17 +781,18 @@ function obStep(n){
 function obOptsBanco(sel){
   return S.carteiras.map(c=>`<option value="${c.id}"${c.id===sel?' selected':''}>${c.emoji} ${c.nome}</option>`).join('');
 }
-function obOptsCateg(sel){
+function obOptsCateg(sel,tipo){
+  tipo=tipo||'saida';
   let h='<option value="">Sem categoria</option>';
-  S.categorias.forEach(ct=>{h+=`<option value="${ct.id}"${ct.id===sel?' selected':''}>${ct.emoji} ${ct.nome}</option>`;});
+  S.categorias.filter(ct=>(ct.tipo||'saida')===tipo).forEach(ct=>{h+=`<option value="${ct.id}"${ct.id===sel?' selected':''}>${ct.emoji} ${ct.nome}</option>`;});
   h+='<option value="__nova">＋ Nova categoria…</option>';
   return h;
 }
 // Cria categoria por texto digitado no onboarding (campo livre) e devolve o id
-async function obCriaCategoria(nome){
-  const ex=S.categorias.find(x=>x.nome.toLowerCase()===nome.trim().toLowerCase());
+async function obCriaCategoria(nome,tipo){
+  const ex=S.categorias.find(x=>x.nome.toLowerCase()===nome.trim().toLowerCase()&&(x.tipo||'saida')===(tipo||'saida'));
   if(ex)return ex.id;
-  const{data}=await db.from('categorias').insert({user_id:S.user.id,nome:nome.trim(),emoji:'🏷️'}).select();
+  const{data}=await db.from('categorias').insert({user_id:S.user.id,nome:nome.trim(),emoji:'🏷️',tipo:tipo||'saida'}).select();
   if(data&&data[0]){S.categorias.push(data[0]);return data[0].id;}
   return null;
 }
@@ -805,7 +830,7 @@ function obRenderRendas(){
         <input class="sh-inp" type="number" placeholder="Dia" min="1" max="31" inputmode="numeric" value="${r.dia}" oninput="S.obRendas[${i}].dia=this.value"/>
       </div>
       <select class="sh-sel" onchange="S.obRendas[${i}].banco=this.value">${obOptsBanco(r.banco)}</select>
-      <select class="sh-sel" style="margin-top:8px;" onchange="obSelCateg(this,'obRendas',${i})">${obOptsCateg(r.categ)}</select>
+      <select class="sh-sel" style="margin-top:8px;" onchange="obSelCateg(this,'obRendas',${i},'entrada')">${obOptsCateg(r.categ,'entrada')}</select>
     </div>`;
   }).join('');
 }
@@ -842,7 +867,7 @@ function obRenderContas(){
         <input class="sh-inp" type="number" placeholder="Dia" min="1" max="31" inputmode="numeric" value="${ct.dia}" oninput="S.obContas[${i}].dia=this.value"/>
       </div>
       <select class="sh-sel" onchange="S.obContas[${i}].banco=this.value">${obOptsBanco(ct.banco)}</select>
-      <select class="sh-sel" style="margin-top:8px;" onchange="obSelCateg(this,'obContas',${i})">${obOptsCateg(ct.categ)}</select>
+      <select class="sh-sel" style="margin-top:8px;" onchange="obSelCateg(this,'obContas',${i},'saida')">${obOptsCateg(ct.categ,'saida')}</select>
     </div>`;
   }).join('');
 }
@@ -864,13 +889,14 @@ async function obFinContas(){
 }
 
 // Seletor de categoria com opção "Nova" via texto
-async function obSelCateg(selEl,lista,i){
+async function obSelCateg(selEl,lista,i,tipo){
+  tipo=tipo||'saida';
   if(selEl.value==='__nova'){
-    const r=await dlgForm('Nova categoria',[
+    const r=await dlgForm('Nova categoria de '+(tipo==='entrada'?'entrada':'saída'),[
       {id:'nome',label:'Nome',type:'text',placeholder:'Ex: Moradia, Mercado'},
     ]);
     if(!r||r==='__DELETE'||!r.nome||!r.nome.trim()){selEl.value=S[lista][i].categ||'';return;}
-    const id=await obCriaCategoria(r.nome);
+    const id=await obCriaCategoria(r.nome,tipo);
     S[lista][i].categ=id||'';
     if(lista==='obRendas')obRenderRendas();else if(lista==='obContas')obRenderContas();else obRenderCartoes();
   } else {
@@ -1308,7 +1334,7 @@ function abreLanc(dia,editId){
     $('l-dia').value=l.dia;
     $('btn-del').style.display='block';
     renderCartSel(l.carteira_id);
-    popularCategSel('l-categ',l.categoria_id||null);
+    popularCategSel('l-categ',l.categoria_id||null,l.tipo);
   } else {
     $('sh-lanc-tit').textContent='Novo lançamento';
     setTipo('saida');
@@ -1317,7 +1343,7 @@ function abreLanc(dia,editId){
     $('l-dia').value=dia||(S.mes===HJM&&S.ano===HJA?HJD:'');
     $('btn-del').style.display='none';
     renderCartSel(null);
-    popularCategSel('l-categ',null);
+    popularCategSel('l-categ',null,S.tipo);
   }
   $('sh-lanc').classList.add('aberto');
 }
@@ -1328,6 +1354,7 @@ function renderCartSel(selId){
 
 function setTipo(t){
   S.tipo=t;
+  if($('l-categ')&&document.getElementById('sh-lanc').classList.contains('aberto'))popularCategSel('l-categ',null,t);
   $('tipo-sai').className='tipo-btn sai'+(t==='saida'?' on':'');
   $('tipo-ent').className='tipo-btn ent'+(t==='entrada'?' on':'');
 }
@@ -1386,14 +1413,14 @@ function abreFixo(editId){
     renderFixoCartSel(excEdit?excEdit.carteira_id:fReal.carteira_id);
     if(fReal.parcelas){setFixoRep('parcelado');$('f-parcelas').value=fReal.parcelas;}
     else{setFixoRep('fixo');}
-    popularCategSel('f-categ',(excEdit&&excEdit.categoria_id!==undefined)?excEdit.categoria_id:(fReal.categoria_id||null));
+    popularCategSel('f-categ',(excEdit&&excEdit.categoria_id!==undefined)?excEdit.categoria_id:(fReal.categoria_id||null),fReal.tipo);
     $('btn-del-fixo').style.display='block';
     var _fe=document.getElementById('fixo-escopo');if(_fe)_fe.style.display='block';
   } else {
     $('sh-fixo-tit').textContent='Novo fixo / parcelado';
     setFixoTipo('saida');setFixoRep('fixo');
     $('f-desc').value='';$('f-val').value='';$('f-dia').value='';$('f-parcelas').value='';
-    popularCategSel('f-categ',null);
+    popularCategSel('f-categ',null,S.fixoTipo);
     $('btn-del-fixo').style.display='none';
     var _fe2=document.getElementById('fixo-escopo');if(_fe2)_fe2.style.display='none';
   }
@@ -1406,6 +1433,7 @@ function renderFixoCartSel(selId){
 
 function setFixoTipo(t){
   S.fixoTipo=t;
+  if($('f-categ')&&document.getElementById('sh-fixo').classList.contains('aberto'))popularCategSel('f-categ',null,t);
   $('fixo-tipo-sai').className='tipo-btn sai'+(t==='saida'?' on':'');
   $('fixo-tipo-ent').className='tipo-btn ent'+(t==='entrada'?' on':'');
 }
@@ -1605,25 +1633,27 @@ function dlgColeta(){
 }
 
 // ── CATEGORIAS (100% do usuário, nada travado) ──
-function popularCategSel(selectId,selId){
+function popularCategSel(selectId,selId,tipo){
   const sel=$(selectId);
   if(!sel)return;
+  if(tipo)sel.dataset.tipo=tipo; else tipo=sel.dataset.tipo||'saida';
   let h='<option value="">Sem categoria</option>';
-  S.categorias.forEach(ct=>{h+=`<option value="${ct.id}"${ct.id===selId?' selected':''}>${ct.emoji} ${ct.nome}</option>`;});
+  S.categorias.filter(ct=>(ct.tipo||'saida')===tipo).forEach(ct=>{h+=`<option value="${ct.id}"${ct.id===selId?' selected':''}>${ct.emoji} ${ct.nome}</option>`;});
   h+='<option value="__nova">＋ Criar categoria…</option>';
   sel.innerHTML=h;
 }
 async function categChange(sel){
   if(sel.value!=='__nova')return;
-  const r=await dlgForm('Nova categoria',[
+  const tipo=sel.dataset.tipo||'saida';
+  const r=await dlgForm('Nova categoria de '+(tipo==='entrada'?'entrada':'saída'),[
     {id:'nome',label:'Nome',type:'text',placeholder:'Ex: Mercado, Farmácia, Lazer'},
     {id:'emoji',label:'Emoji',type:'text',value:'🏷️'},
   ]);
   if(!r||r==='__DELETE'||!r.nome||!r.nome.trim()){sel.value='';return;}
-  const{data,error}=await db.from('categorias').insert({user_id:S.user.id,nome:r.nome.trim(),emoji:r.emoji||'🏷️'}).select();
+  const{data,error}=await db.from('categorias').insert({user_id:S.user.id,nome:r.nome.trim(),emoji:r.emoji||'🏷️',tipo}).select();
   if(error){sel.value='';return;}
   await carrega();
-  popularCategSel(sel.id,data&&data[0]?data[0].id:null);
+  popularCategSel(sel.id,data&&data[0]?data[0].id:null,tipo);
 }
 function nomeCateg(id){
   if(!id)return null;
@@ -1631,12 +1661,18 @@ function nomeCateg(id){
   return ct?`${ct.emoji} ${ct.nome}`:null;
 }
 function gerenciarCategorias(){
-  if(!S.categorias.length){dlgInfo('Categorias','Você ainda não criou categorias. Crie na hora de fazer um lançamento ou compra no cartão.');return;}
+  if(!S.categorias.length){dlgInfo('Categorias','Você ainda não tem categorias.');return;}
   let h=`<div class="sh-handle"></div><div class="sh-tit">Minhas categorias</div><div class="sh-sub">Toque em uma para editar ou apagar</div>`;
-  S.categorias.forEach(ct=>{
-    h+=`<div onclick="editarCategoria('${ct.id}')" style="background:var(--bg3);border-radius:10px;margin-bottom:6px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
-      <span style="font-size:14px;color:var(--tm);">${ct.emoji} ${ct.nome}</span>
-      <span style="color:var(--ts);">›</span></div>`;
+  const grupos=[['entrada','Entradas'],['saida','Saídas']];
+  grupos.forEach(([tp,titulo])=>{
+    const lista=S.categorias.filter(ct=>(ct.tipo||'saida')===tp);
+    if(!lista.length)return;
+    h+=`<div style="font-size:11px;font-weight:700;color:var(--ts);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 6px;">${titulo}</div>`;
+    lista.forEach(ct=>{
+      h+=`<div onclick="editarCategoria('${ct.id}')" style="background:var(--bg3);border-radius:10px;margin-bottom:6px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
+        <span style="font-size:14px;color:var(--tm);">${ct.emoji} ${ct.nome}</span>
+        <span style="color:var(--ts);">›</span></div>`;
+    });
   });
   h+=`<button class="btn-canc" style="width:100%;margin-top:8px;" onclick="dlgFecha(null)">Fechar</button>`;
   $('dlg-box').innerHTML=h;
@@ -1998,7 +2034,7 @@ function abreCompra(editId){
     $('cp-dia').value=cp.dia;
     $('cp-cartao').value=cp.cartao_id;
     $('cp-parcelas').value=cp.parcelas||1;
-    popularCategSel('cp-categ',cp.categoria_id||null);
+    popularCategSel('cp-categ',cp.categoria_id||null,'saida');
     S.compraFaturaMes=cp.mes_fatura;
     S.compraFaturaAno=cp.ano_fatura;
     $('btn-del-compra').style.display='block';
@@ -2007,7 +2043,7 @@ function abreCompra(editId){
     $('cp-desc').value='';$('cp-val').value='';
     $('cp-dia').value=(S.mes===HJM&&S.ano===HJA)?HJD:'';
     $('cp-parcelas').value=1;
-    popularCategSel('cp-categ',null);
+    popularCategSel('cp-categ',null,'saida');
     S.compraFaturaMes=S.mes+1;
     S.compraFaturaAno=S.ano;
     $('btn-del-compra').style.display='none';
