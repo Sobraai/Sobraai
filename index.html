@@ -12,6 +12,8 @@
   --r:#f87171;--rd:#dc2626;--rg:#1a0a0a;
   --bg:#09090b;--bg2:#111;--bg3:#161616;
   --bd:#1c1c1e;--ts:#555;--tm:#e4e4e7;
+  --tit:#ffffff;--onv:#000000;--onr:#ffffff;
+  --chip1:#1a1000;--chip2:#1a1a2e;--chip3:#0a1a2e;
   --st:env(safe-area-inset-top,0px);
   --sb:env(safe-area-inset-bottom,0px);
 }
@@ -27,13 +29,13 @@ input,select{outline:none;font-family:inherit;}
 #scr-auth{background:var(--bg);align-items:center;justify-content:center;padding:24px;}
 .auth-box{background:var(--bg2);border-radius:20px;padding:24px;width:100%;max-width:380px;border:0.5px solid var(--bd);}
 .auth-logo{text-align:center;margin-bottom:20px;}
-.auth-logo-txt{font-size:28px;font-weight:800;color:#fff;}
+.auth-logo-txt{font-size:28px;font-weight:800;color:var(--tit);}
 .auth-logo-txt span{color:var(--v);}
-.auth-tit{font-size:18px;font-weight:700;margin-bottom:16px;color:#fff;}
-.inp{width:100%;padding:12px 14px;border:1.5px solid var(--bd);border-radius:11px;font-size:14px;margin-bottom:12px;background:var(--bg3);color:#fff;}
+.auth-tit{font-size:18px;font-weight:700;margin-bottom:16px;color:var(--tit);}
+.inp{width:100%;padding:12px 14px;border:1.5px solid var(--bd);border-radius:11px;font-size:14px;margin-bottom:12px;background:var(--bg3);color:var(--tit);}
 .inp:focus{border-color:var(--v);}
 .inp::placeholder{color:var(--ts);}
-.btn-p{width:100%;padding:14px;background:var(--v);color:#000;border-radius:12px;font-size:15px;font-weight:700;margin-top:4px;}
+.btn-p{width:100%;padding:14px;background:var(--v);color:var(--onv);border-radius:12px;font-size:15px;font-weight:700;margin-top:4px;}
 .btn-p:active{background:var(--vd);}
 .auth-msg{font-size:12px;color:var(--r);margin-top:8px;text-align:center;}
 .auth-toggle{text-align:center;margin-top:12px;font-size:13px;color:var(--ts);}
@@ -42,13 +44,13 @@ input,select{outline:none;font-family:inherit;}
 /* ONBOARDING */
 #scr-ob{background:var(--bg2);overflow-y:auto;}
 .ob-wrap{padding:24px;max-width:480px;margin:0 auto;padding-top:calc(var(--st)+24px);}
-.ob-tit{font-size:24px;font-weight:800;color:#fff;margin-bottom:6px;}
+.ob-tit{font-size:24px;font-weight:800;color:var(--tit);margin-bottom:6px;}
 .ob-sub{font-size:14px;color:var(--ts);margin-bottom:24px;line-height:1.5;}
 .ob-lbl{font-size:11px;font-weight:700;color:var(--ts);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;margin-top:14px;}
 .banco-item{background:var(--bg3);border-radius:13px;padding:12px;margin-bottom:10px;display:flex;gap:10px;align-items:center;}
 .banco-emoji{width:40px;height:40px;border-radius:10px;background:var(--bg2);border:1.5px solid var(--bd);font-size:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .banco-fields{flex:1;display:flex;flex-direction:column;gap:8px;}
-.banco-nome{padding:9px 12px;border:1.5px solid var(--bd);border-radius:10px;font-size:14px;font-weight:600;background:var(--bg2);color:#fff;}
+.banco-nome{padding:9px 12px;border:1.5px solid var(--bd);border-radius:10px;font-size:14px;font-weight:600;background:var(--bg2);color:var(--tit);}
 .banco-nome::placeholder{color:var(--ts);}
 .banco-saldo{padding:9px 12px;border:1.5px solid var(--bd);border-radius:10px;font-size:15px;font-weight:700;color:var(--v);background:var(--bg2);}
 .banco-del{width:32px;height:32px;border-radius:8px;background:var(--rg);color:var(--r);font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;align-self:flex-start;}
@@ -61,14 +63,14 @@ input,select{outline:none;font-family:inherit;}
 /* HEADER */
 .hdr{background:var(--bg2);padding:calc(var(--st)+10px) 16px 0;flex-shrink:0;border-bottom:0.5px solid var(--bd);}
 .hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
-.brand{font-size:18px;font-weight:800;color:#fff;}
+.brand{font-size:18px;font-weight:800;color:var(--tit);}
 .brand span{color:var(--v);}
 .hdr-btns{display:flex;gap:8px;}
 .btn-ic{width:34px;height:34px;border-radius:10px;background:var(--bg3);color:var(--ts);font-size:16px;display:flex;align-items:center;justify-content:center;text-decoration:none;}
 .mbar{display:flex;align-items:center;justify-content:space-between;padding:6px 0 10px;}
 .mbtn{width:32px;height:32px;border-radius:50%;background:var(--bg3);color:var(--v);font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;}
 .minfo{text-align:center;}
-.mtxt{font-size:15px;font-weight:700;color:#fff;}
+.mtxt{font-size:15px;font-weight:700;color:var(--tit);}
 .msub{font-size:10px;color:var(--ts);text-transform:uppercase;letter-spacing:.06em;}
 
 /* CONTEÚDO */
@@ -79,7 +81,7 @@ input,select{outline:none;font-family:inherit;}
 .hero{background:linear-gradient(145deg,#161616,#0f0f0f);border:0.5px solid var(--bd);border-radius:18px;padding:18px;margin-bottom:16px;box-shadow:0 4px 20px rgba(0,0,0,.3);}
 .hero-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;}
 .hero-lbl{font-size:11px;color:var(--ts);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:4px;}
-.hero-saldo{font-size:30px;font-weight:800;color:#fff;line-height:1;letter-spacing:-0.5px;}
+.hero-saldo{font-size:30px;font-weight:800;color:var(--tit);line-height:1;letter-spacing:-0.5px;}
 .hero-emoji{font-size:28px;}
 .hero-row{display:flex;gap:10px;}
 .hero-pill{flex:1;background:var(--bg);border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:8px;}
@@ -96,7 +98,7 @@ input,select{outline:none;font-family:inherit;}
 .tl-seg{width:1.5px;flex:1;background:var(--bd);min-height:12px;margin-top:3px;}
 .tl-body{flex:1;padding-bottom:12px;}
 .tl-hdr{display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:6px 0;min-height:44px;}
-.tl-data{font-size:13px;font-weight:500;color:#fff;}
+.tl-data{font-size:13px;font-weight:500;color:var(--tit);}
 .tl-data.vazio{font-size:12px;color:var(--ts);}
 .tl-data.neg{color:var(--r);}
 .tl-saldo{font-size:13px;font-weight:500;color:var(--v);}
@@ -118,7 +120,7 @@ input,select{outline:none;font-family:inherit;}
 .rodape{position:fixed;bottom:calc(58px + var(--sb));left:0;right:0;max-width:520px;margin:0 auto;background:var(--bg2);padding:8px 20px;display:flex;align-items:center;justify-content:space-between;z-index:39;border-top:0.5px solid var(--bd);}
 .rodape-bloco{display:flex;flex-direction:column;}
 .rodape-lbl{font-size:9px;color:var(--ts);font-weight:600;text-transform:uppercase;letter-spacing:.05em;}
-.rodape-val{font-size:15px;font-weight:700;color:#fff;}
+.rodape-val{font-size:15px;font-weight:700;color:var(--tit);}
 .rodape-val.neg{color:var(--r);}
 .rodape-arrow{font-size:16px;color:var(--bd);}
 
@@ -128,29 +130,29 @@ input,select{outline:none;font-family:inherit;}
 .bnav-ic{font-size:18px;line-height:1;}
 .bnav-lbl{font-size:9px;color:var(--ts);font-weight:500;}
 .bnav-btn.active .bnav-lbl{color:var(--v);}
-.bnav-fab{width:48px;height:48px;border-radius:50%;background:var(--v);color:#000;font-size:26px;font-weight:300;display:flex;align-items:center;justify-content:center;margin-top:-20px;box-shadow:0 4px 16px rgba(34,197,94,.35);flex-shrink:0;}
+.bnav-fab{width:48px;height:48px;border-radius:50%;background:var(--v);color:var(--onv);font-size:26px;font-weight:300;display:flex;align-items:center;justify-content:center;margin-top:-20px;box-shadow:0 4px 16px rgba(34,197,94,.35);flex-shrink:0;}
 
 /* SHEET */
 .ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:flex-end;}
 .ov.aberto{display:flex;}
 .sheet{background:var(--bg2);border-radius:20px 20px 0 0;padding:20px 20px calc(20px + var(--sb));width:100%;max-height:90vh;overflow-y:auto;border-top:0.5px solid var(--bd);}
 .sh-handle{width:36px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 16px;}
-.sh-tit{font-size:17px;font-weight:800;color:#fff;margin-bottom:4px;}
+.sh-tit{font-size:17px;font-weight:800;color:var(--tit);margin-bottom:4px;}
 .sh-sub{font-size:12px;color:var(--ts);margin-bottom:16px;}
 .tipo-row{display:flex;gap:8px;margin-bottom:16px;}
 .tipo-btn{flex:1;padding:12px;border-radius:11px;font-size:14px;font-weight:700;border:2px solid var(--bd);background:var(--bg3);color:var(--ts);}
 .tipo-btn.on.ent{background:var(--vg);border-color:var(--v);color:var(--v);}
 .tipo-btn.on.sai{background:var(--rg);border-color:var(--r);color:var(--r);}
 .sh-lbl{font-size:11px;font-weight:700;color:var(--ts);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;margin-top:12px;}
-.sh-inp{width:100%;padding:12px 14px;border:1.5px solid var(--bd);border-radius:11px;font-size:14px;background:var(--bg3);color:#fff;}
+.sh-inp{width:100%;padding:12px 14px;border:1.5px solid var(--bd);border-radius:11px;font-size:14px;background:var(--bg3);color:var(--tit);}
 .sh-inp:focus{border-color:var(--v);}
 .sh-inp::placeholder{color:var(--ts);}
-.sh-val{font-size:22px;font-weight:800;text-align:center;padding:14px;border:2px solid var(--bd);border-radius:12px;width:100%;background:var(--bg3);color:#fff;}
+.sh-val{font-size:22px;font-weight:800;text-align:center;padding:14px;border:2px solid var(--bd);border-radius:12px;width:100%;background:var(--bg3);color:var(--tit);}
 .sh-val:focus{border-color:var(--v);}
-.sh-sel{width:100%;padding:12px 14px;border:1.5px solid var(--bd);border-radius:11px;font-size:14px;background:var(--bg3);color:#fff;appearance:none;}
+.sh-sel{width:100%;padding:12px 14px;border:1.5px solid var(--bd);border-radius:11px;font-size:14px;background:var(--bg3);color:var(--tit);appearance:none;}
 .sh-actions{display:flex;gap:8px;margin-top:16px;}
 .btn-canc{flex:1;padding:13px;border-radius:11px;background:var(--bg3);color:var(--ts);font-size:14px;font-weight:700;}
-.btn-salv{flex:2;padding:13px;border-radius:11px;background:var(--v);color:#000;font-size:14px;font-weight:700;}
+.btn-salv{flex:2;padding:13px;border-radius:11px;background:var(--v);color:var(--onv);font-size:14px;font-weight:700;}
 .btn-salv:active{background:var(--vd);}
 .btn-del{width:100%;padding:13px;border-radius:11px;background:var(--rg);color:var(--r);font-size:14px;font-weight:700;margin-top:8px;}
 
@@ -159,13 +161,13 @@ input,select{outline:none;font-family:inherit;}
 .sh-radio{flex:1;padding:10px;border-radius:10px;font-size:13px;font-weight:700;border:2px solid var(--bd);background:var(--bg3);color:var(--ts);}
 .sh-radio.on{border-color:var(--v);background:var(--vg);color:var(--v);}
 /* WHATSAPP */
-.wpp-btn{display:flex;align-items:center;gap:8px;padding:12px 16px;background:#25D366;color:#fff;border-radius:12px;font-size:14px;font-weight:700;text-decoration:none;margin:16px;}
+.wpp-btn{display:flex;align-items:center;gap:8px;padding:12px 16px;background:#25D366;color:var(--tit);border-radius:12px;font-size:14px;font-weight:700;text-decoration:none;margin:16px;}
 
 /* TEMA CLARO */
 body.tema-claro{--v:#16a34a;--vd:#15803d;--vg:#dcfce7;--r:#dc2626;--rg:#fee2e2;--bg:#f5f5f5;--bg2:#ffffff;--bg3:#f0f0f0;--bd:#e5e5e5;--ts:#999;--tm:#111;background:#f5f5f5;color:#111;}
 body.tema-claro .brand{color:#111;}
 body.tema-claro .auth-logo-txt,body.tema-claro .auth-tit,body.tema-claro .ob-tit,body.tema-claro .mtxt,body.tema-claro .tl-data,body.tema-claro .rodape-val,body.tema-claro .sh-tit,body.tema-claro .banco-nome{color:#111;}
-body.tema-claro .btn-p,body.tema-claro .btn-salv,body.tema-claro .bnav-fab{color:#fff;}
+body.tema-claro .btn-p,body.tema-claro .btn-salv,body.tema-claro .bnav-fab{color:var(--tit);}
 
 /* ═══ POLIMENTO VISUAL ═══ */
 /* Números alinhados estilo app de banco */
@@ -254,6 +256,30 @@ body.tema-claro .btn-p,body.tema-claro .btn-salv,body.tema-claro .bnav-fab{color
 /* FAB: o + gira e vira ✕ */
 #fab-ic{display:inline-block;transition:transform .3s cubic-bezier(.34,1.56,.64,1);}
 #fab-ic.aberto{transform:rotate(45deg);}
+
+/* ═══ TEMA CLARO ═══ */
+body.claro{
+  --v:#16a34a;--vd:#15803d;--vg:#dcfce7;
+  --r:#dc2626;--rg:#fee2e2;
+  --bg:#f4f4f5;--bg2:#ffffff;--bg3:#f0f0f1;
+  --bd:#e4e4e7;--ts:#71717a;--tm:#27272a;
+  --tit:#111111;--onv:#ffffff;--onr:#ffffff;
+  --chip1:#fef3c7;--chip2:#e0e7ff;--chip3:#dbeafe;
+  background:#f4f4f5;color:#27272a;
+}
+body.claro .hdr{background:linear-gradient(180deg,#ffffff,#fafafa);box-shadow:0 1px 0 rgba(0,0,0,.06);}
+body.claro .bottom-nav,body.claro .rodape{background:rgba(255,255,255,.93);}
+body.claro .brand span,body.claro .auth-logo-txt span{text-shadow:none;}
+body.claro .tl-itens{box-shadow:0 2px 10px rgba(0,0,0,.06);border-color:rgba(0,0,0,.05);}
+body.claro .sheet{box-shadow:0 -8px 40px rgba(0,0,0,.18);}
+body.claro #toast{background:rgba(255,255,255,.97);box-shadow:0 6px 24px rgba(0,0,0,.16);}
+body.claro .mbtn{border-color:rgba(0,0,0,.06);}
+body.claro .tl-seg{background:linear-gradient(180deg,#e4e4e7,rgba(228,228,231,.4));}
+body.claro .hero-alerta{box-shadow:none;}
+body.claro .wpp-btn{color:#fff;}
+body.claro .ov{background:rgba(0,0,0,.35);}
+/* Transição suave entre temas */
+body,.hdr,.bottom-nav,.rodape,.sheet,.tl-itens,.auth-box,.content>div{transition:background .25s ease,background-color .25s ease,border-color .25s ease;}
 </style>
 </head>
 <body>
@@ -269,6 +295,7 @@ body.tema-claro .btn-p,body.tema-claro .btn-salv,body.tema-claro .bnav-fab{color
     <button class="btn-p" onclick="authGo()">Entrar</button>
     <div class="auth-msg" id="a-msg"></div>
     <div class="auth-toggle" id="auth-toggle">Não tem conta? <span onclick="toggleAuth()">Criar conta</span></div>
+    <div class="auth-toggle" style="margin-top:6px;"><span onclick="esqueciSenha()" style="color:var(--ts);font-weight:500;">Esqueci minha senha</span></div>
   </div>
 </div>
 
@@ -306,7 +333,7 @@ body.tema-claro .btn-p,body.tema-claro .btn-salv,body.tema-claro .bnav-fab{color
   <div class="content" id="content"></div>
   <div class="content" id="content-carteiras" style="display:none;">
     <div style="padding:16px;">
-      <div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:6px;">Minhas carteiras</div>
+      <div style="font-size:20px;font-weight:700;color:var(--tit);margin-bottom:6px;">Minhas carteiras</div>
       <div style="font-size:12px;color:var(--ts);margin-bottom:16px;">O saldo aqui é o ponto de partida. Para mudanças do dia a dia, lance no calendário.</div>
       <div id="lista-carteiras"></div>
       <button class="btn-add" onclick="novaCarteira()" style="margin-top:8px;">+ Adicionar carteira</button>
@@ -317,11 +344,18 @@ body.tema-claro .btn-p,body.tema-claro .btn-salv,body.tema-claro .bnav-fab{color
   </div>
   <div class="content" id="content-config" style="display:none;">
     <div style="padding:16px;">
-      <div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:16px;">Configurações</div>
+      <div style="font-size:20px;font-weight:700;color:var(--tit);margin-bottom:16px;">Configurações</div>
+      <div style="background:var(--bg2);border-radius:14px;overflow:hidden;margin-bottom:12px;">
+        <div style="padding:14px 16px;display:flex;align-items:center;gap:12px;" onclick="toggleTema()">
+          <div style="width:36px;height:36px;border-radius:10px;background:var(--chip1);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;" id="tema-emoji">🌙</div>
+          <div style="flex:1;"><div style="font-size:14px;color:var(--tit);">Modo escuro</div><div style="font-size:11px;color:var(--ts);margin-top:2px;" id="tema-sub">Ativado</div></div>
+          <div id="tema-toggle" style="width:42px;height:24px;border-radius:12px;background:var(--v);position:relative;flex-shrink:0;transition:background .25s ease;"><div id="tema-knob" style="width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;right:2px;top:2px;transition:all .25s cubic-bezier(.34,1.3,.64,1);box-shadow:0 1px 4px rgba(0,0,0,.3);"></div></div>
+        </div>
+      </div>
       <div style="background:var(--bg2);border-radius:14px;overflow:hidden;margin-bottom:12px;">
         <div style="padding:14px 16px;display:flex;align-items:center;gap:12px;" onclick="gerenciarCategorias()">
           <div style="width:36px;height:36px;border-radius:10px;background:var(--vg);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🏷️</div>
-          <div style="flex:1;"><div style="font-size:14px;color:#fff;">Minhas categorias</div><div style="font-size:11px;color:var(--ts);margin-top:2px;">Renomear ou apagar categorias</div></div>
+          <div style="flex:1;"><div style="font-size:14px;color:var(--tit);">Minhas categorias</div><div style="font-size:11px;color:var(--ts);margin-top:2px;">Renomear ou apagar categorias</div></div>
           <span style="color:var(--ts);">›</span>
         </div>
       </div>
@@ -362,15 +396,19 @@ body.tema-claro .btn-p,body.tema-claro .btn-salv,body.tema-claro .bnav-fab{color
     <div style="display:flex;flex-direction:column;gap:8px;">
       <button onclick="fechaFab();abreLanc(null);" style="background:var(--bg2);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;border:0.5px solid var(--bd);text-align:left;width:100%;">
         <div style="width:36px;height:36px;border-radius:10px;background:var(--vg);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">💰</div>
-        <div><div style="font-size:14px;font-weight:500;color:#fff;">Lançamento</div><div style="font-size:11px;color:var(--ts);">Entrada ou saída no banco</div></div>
+        <div><div style="font-size:14px;font-weight:500;color:var(--tit);">Lançamento</div><div style="font-size:11px;color:var(--ts);">Entrada ou saída no banco</div></div>
       </button>
       <button onclick="fechaFab();abreFixo(null);" style="background:var(--bg2);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;border:0.5px solid var(--bd);text-align:left;width:100%;">
-        <div style="width:36px;height:36px;border-radius:10px;background:#1a1000;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🔁</div>
-        <div><div style="font-size:14px;font-weight:500;color:#fff;">Fixo / Parcelado</div><div style="font-size:11px;color:var(--ts);">Repete todo mês ou por X vezes</div></div>
+        <div style="width:36px;height:36px;border-radius:10px;background:var(--chip1);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🔁</div>
+        <div><div style="font-size:14px;font-weight:500;color:var(--tit);">Fixo / Parcelado</div><div style="font-size:11px;color:var(--ts);">Repete todo mês ou por X vezes</div></div>
       </button>
       <button onclick="fechaFab();abreCompra(null);" style="background:var(--bg2);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;border:0.5px solid var(--bd);text-align:left;width:100%;">
-        <div style="width:36px;height:36px;border-radius:10px;background:#1a1a2e;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">💳</div>
-        <div><div style="font-size:14px;font-weight:500;color:#fff;">Compra no cartão</div><div style="font-size:11px;color:var(--ts);">Entra na fatura, não no saldo agora</div></div>
+        <div style="width:36px;height:36px;border-radius:10px;background:var(--chip2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">💳</div>
+        <div><div style="font-size:14px;font-weight:500;color:var(--tit);">Compra no cartão</div><div style="font-size:11px;color:var(--ts);">Entra na fatura, não no saldo agora</div></div>
+      </button>
+      <button onclick="fechaFab();abreTransfer();" style="background:var(--bg2);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;border:0.5px solid var(--bd);text-align:left;width:100%;">
+        <div style="width:36px;height:36px;border-radius:10px;background:var(--chip3);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🔄</div>
+        <div><div style="font-size:14px;font-weight:500;color:var(--tit);">Transferência</div><div style="font-size:11px;color:var(--ts);">Mover dinheiro entre seus bancos</div></div>
       </button>
     </div>
   </div>
@@ -491,10 +529,61 @@ async function iniciaFluxo(u){
   else{mostrar('scr-app');render();}
 }
 
+// Transferência entre carteiras: saída na origem + entrada no destino
+async function abreTransfer(){
+  if(S.carteiras.length<2){await dlgInfo('Transferência','Você precisa de pelo menos 2 carteiras. Adicione outra na aba Carteiras.');return;}
+  const r=await dlgForm('Transferência',[
+    {id:'de',label:'Sai de qual banco?',type:'select',value:S.carteiras[0].id,options:S.carteiras.map(x=>({v:x.id,t:`${x.emoji} ${x.nome}`}))},
+    {id:'para',label:'Vai para qual banco?',type:'select',value:S.carteiras[1].id,options:S.carteiras.map(x=>({v:x.id,t:`${x.emoji} ${x.nome}`}))},
+    {id:'valor',label:'Valor (R$)',type:'number',placeholder:'0,00'},
+    {id:'dia',label:'Dia',type:'number',value:(S.mes===HJM&&S.ano===HJA)?HJD:1},
+  ]);
+  if(!r||r==='__DELETE')return;
+  const v=parseFloat(r.valor)||0;
+  const dia=parseInt(r.dia)||1;
+  if(v<=0)return dlgInfo('Faltou algo','Informe o valor da transferência.');
+  if(r.de===r.para)return dlgInfo('Ops','Origem e destino precisam ser bancos diferentes.');
+  const de=S.carteiras.find(x=>x.id===r.de),para=S.carteiras.find(x=>x.id===r.para);
+  await db.from('lancamentos').insert([
+    {user_id:S.user.id,descricao:`Transferência → ${para.nome}`,valor:v,tipo:'saida',dia,mes:S.mes+1,ano:S.ano,carteira_id:r.de},
+    {user_id:S.user.id,descricao:`Transferência ← ${de.nome}`,valor:v,tipo:'entrada',dia,mes:S.mes+1,ano:S.ano,carteira_id:r.para},
+  ]);
+  await carrega();render();
+  toast('🔄 Transferido');
+}
+
+// Esqueci minha senha: Supabase envia link por e-mail
+async function esqueciSenha(){
+  const em=$('a-em').value.trim();
+  if(!em){await dlgInfo('Digite seu e-mail','Preencha o campo de e-mail acima e toque em "Esqueci minha senha" de novo.');return;}
+  const{error}=await db.auth.resetPasswordForEmail(em,{redirectTo:location.origin+location.pathname});
+  if(error){await dlgInfo('Erro',error.message);return;}
+  await dlgInfo('Link enviado 📬','Enviamos um link de redefinição para '+em+'. Abra o e-mail e toque no link para criar uma nova senha.');
+}
+
 // Recarrega sessão ao abrir o app (sem conflito com authGo)
 (async()=>{
+  const isRecovery=location.hash.includes('type=recovery');
   const{data}=await db.auth.getSession();
   if(data?.session?.user){
+    if(isRecovery){
+      history.replaceState(null,'',location.pathname);
+      let done=false;
+      while(!done){
+        const r=await dlgForm('Criar nova senha',[
+          {id:'p1',label:'Nova senha',type:'password'},
+          {id:'p2',label:'Repita a nova senha',type:'password'},
+        ]);
+        if(!r){done=true;break;}
+        if(r.p1&&r.p1.length>=6&&r.p1===r.p2){
+          const{error}=await db.auth.updateUser({password:r.p1});
+          if(error){await dlgInfo('Erro',error.message);}
+          else{toast('✓ Senha alterada');done=true;}
+        } else {
+          await dlgInfo('Atenção','As senhas precisam ser iguais e ter pelo menos 6 caracteres.');
+        }
+      }
+    }
     await iniciaFluxo(data.session.user);
   }
 })();
@@ -1136,7 +1225,7 @@ function dlgConfirm(titulo,msg,btnTxt,danger){
       ${msg?`<div class="sh-sub">${msg}</div>`:''}
       <div class="sh-actions">
         <button class="btn-canc" onclick="dlgFecha(false)">Cancelar</button>
-        <button class="btn-salv" style="${danger?'background:var(--r);color:#fff;':''}" onclick="dlgFecha(true)">${btnTxt||'Confirmar'}</button>
+        <button class="btn-salv" style="${danger?'background:var(--r);color:var(--onr);':''}" onclick="dlgFecha(true)">${btnTxt||'Confirmar'}</button>
       </div>`;
     $('dlg-ov').classList.add('aberto');
   });
@@ -1303,7 +1392,7 @@ function renderCarteiras(){
     <div style="background:var(--bg2);border-radius:14px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px;border:0.5px solid var(--bd);">
       <div style="font-size:24px;">${cart.emoji}</div>
       <div style="flex:1;">
-        <div style="font-size:14px;font-weight:500;color:#fff;">${cart.nome}</div>
+        <div style="font-size:14px;font-weight:500;color:var(--tit);">${cart.nome}</div>
         <div style="font-size:15px;font-weight:700;color:${hoje<0?'var(--r)':'var(--v)'};margin-top:2px;">${hoje<0?'-':''}R$ ${Number(Math.abs(hoje)).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
         <div style="font-size:10px;color:${fimMes<0?'var(--r)':'var(--ts)'};margin-top:2px;">fim do mês: ${fimMes<0?'-':''}R$ ${Number(Math.abs(fimMes)).toLocaleString('pt-BR',{minimumFractionDigits:2})} · início: R$ ${Number(cart.saldo).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
       </div>
@@ -1360,12 +1449,12 @@ function renderCartoes(){
   const cm=S.cartoesMes,ca=S.cartoesAno;
   const isMesAtual=cm===HJM&&ca===HJA;
   let h=`<div style="padding:16px;">
-    <div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:6px;">Cartões de crédito</div>
+    <div style="font-size:20px;font-weight:700;color:var(--tit);margin-bottom:6px;">Cartões de crédito</div>
     <div style="font-size:12px;color:var(--ts);margin-bottom:14px;">Compras entram na fatura. A fatura desconta do saldo no vencimento.</div>
     <div style="display:flex;align-items:center;gap:8px;background:var(--bg2);border-radius:12px;padding:8px;margin-bottom:14px;border:0.5px solid var(--bd);">
       <button onclick="navMesCartoes(-1)" style="width:34px;height:34px;border-radius:9px;background:var(--bg3);color:var(--v);font-size:16px;">‹</button>
       <div style="flex:1;text-align:center;">
-        <div style="font-size:14px;font-weight:700;color:#fff;">${MESES[cm]} ${ca}</div>
+        <div style="font-size:14px;font-weight:700;color:var(--tit);">${MESES[cm]} ${ca}</div>
         <div style="font-size:10px;color:var(--ts);">${isMesAtual?'faturas deste mês':'faturas futuras'}</div>
       </div>
       <button onclick="navMesCartoes(1)" style="width:34px;height:34px;border-radius:9px;background:var(--bg3);color:var(--v);font-size:16px;">›</button>
@@ -1379,7 +1468,7 @@ function renderCartoes(){
         <div style="display:flex;align-items:center;gap:12px;">
           <div style="font-size:24px;">${ct.emoji}</div>
           <div style="flex:1;">
-            <div style="font-size:14px;font-weight:500;color:#fff;">${ct.nome}</div>
+            <div style="font-size:14px;font-weight:500;color:var(--tit);">${ct.nome}</div>
             <div style="font-size:11px;color:var(--ts);margin-top:2px;">Vence dia ${ct.dia_vencimento}</div>
           </div>
           <button onclick="editarCartao('${ct.id}')" style="background:var(--bg3);border-radius:8px;padding:6px 12px;color:var(--ts);font-size:12px;">Editar</button>
@@ -1458,11 +1547,11 @@ function renderFaturaDetalhe(){
   const pago=!!(edit&&edit.pago);
   let h=`<div style="padding:16px;">
     <button onclick="voltarCartoes()" style="background:none;color:var(--v);font-size:14px;padding:4px 0;margin-bottom:8px;">‹ Voltar aos cartões</button>
-    <div style="font-size:20px;font-weight:700;color:#fff;">${ct.emoji} Fatura ${ct.nome}</div>
+    <div style="font-size:20px;font-weight:700;color:var(--tit);">${ct.emoji} Fatura ${ct.nome}</div>
     <div style="display:flex;align-items:center;gap:8px;background:var(--bg2);border-radius:12px;padding:8px;margin:10px 0;border:0.5px solid var(--bd);">
       <button onclick="mudaFaturaView(-1)" style="width:34px;height:34px;border-radius:9px;background:var(--bg3);color:var(--v);font-size:16px;">‹</button>
       <div style="flex:1;text-align:center;">
-        <div style="font-size:14px;font-weight:700;color:#fff;">${MESES[mes-1]} ${ano}</div>
+        <div style="font-size:14px;font-weight:700;color:var(--tit);">${MESES[mes-1]} ${ano}</div>
         <div style="font-size:10px;color:var(--ts);">vence dia ${ct.dia_vencimento}</div>
       </div>
       <button onclick="mudaFaturaView(1)" style="width:34px;height:34px;border-radius:9px;background:var(--bg3);color:var(--v);font-size:16px;">›</button>
@@ -1472,7 +1561,7 @@ function renderFaturaDetalhe(){
     h+=`<div style="background:var(--vg);border:0.5px solid rgba(34,197,94,.3);border-radius:10px;padding:10px 12px;font-size:12.5px;font-weight:600;color:var(--v);margin-bottom:8px;">✓ Fatura paga — o pagamento está no calendário como lançamento</div>`;
     h+=`<button onclick="desfazerPagamento('${cartaoId}',${mes},${ano})" style="background:transparent;border:1px solid var(--bd);border-radius:10px;padding:10px;width:100%;color:var(--ts);font-size:12px;margin-bottom:8px;">Desfazer pagamento</button>`;
   } else {
-    if(vTotal>0)h+=`<button onclick="pagarFatura('${cartaoId}',${mes},${ano})" style="background:var(--v);border-radius:10px;padding:12px;width:100%;color:#000;font-size:14px;font-weight:700;margin-bottom:8px;">💸 Pagar fatura</button>`;
+    if(vTotal>0)h+=`<button onclick="pagarFatura('${cartaoId}',${mes},${ano})" style="background:var(--v);border-radius:10px;padding:12px;width:100%;color:var(--onv);font-size:14px;font-weight:700;margin-bottom:8px;">💸 Pagar fatura</button>`;
     if(edit)h+=`<div style="font-size:11px;color:#fbbf24;margin-bottom:8px;">⚠ Valor editado manualmente (compras somam R$ ${brl(comprasFat.reduce((s,c)=>s+parseFloat(c.valor),0))})</div>`;
     h+=`<button onclick="editarValorFatura('${cartaoId}',${mes},${ano})" style="background:var(--bg3);border-radius:10px;padding:10px;width:100%;color:var(--tm);font-size:13px;font-weight:600;margin-bottom:8px;">✏️ Editar valor da fatura</button>`;
     if(edit)h+=`<button onclick="resetarFatura('${cartaoId}',${mes},${ano})" style="background:transparent;border:1px solid var(--bd);border-radius:10px;padding:10px;width:100%;color:var(--ts);font-size:12px;margin-bottom:8px;">Voltar ao valor automático</button>`;
@@ -1485,7 +1574,7 @@ function renderFaturaDetalhe(){
       const tag=cp.parcelas>1?`${cp.parcela_atual}/${cp.parcelas}`:'';
       const cat=nomeCateg(cp.categoria_id);
       h+=`<div onclick="abreCompra('${cp.id}')" style="background:var(--bg2);border-radius:12px;padding:12px 14px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;border:0.5px solid var(--bd);">
-        <div><div style="font-size:13px;color:#fff;">${cp.descricao} ${tag?`<span class="tl-tag">${tag}</span>`:''}</div><div style="font-size:10px;color:var(--ts);margin-top:1px;">dia ${cp.dia}${cat?' · '+cat:''}</div></div>
+        <div><div style="font-size:13px;color:var(--tit);">${cp.descricao} ${tag?`<span class="tl-tag">${tag}</span>`:''}</div><div style="font-size:10px;color:var(--ts);margin-top:1px;">dia ${cp.dia}${cat?' · '+cat:''}</div></div>
         <div style="font-size:13px;font-weight:600;color:var(--r);">R$ ${brl(cp.valor)}</div>
       </div>`;
     });
@@ -1633,16 +1722,26 @@ async function delCompra(){
   render();toast('Apagado');
 }
 
-// ── TEMA ──
-let temaEscuro=true;
-function toggleTema(){
-  temaEscuro=!temaEscuro;
-  document.body.classList.toggle('tema-claro',!temaEscuro);
-  $('tema-sub').textContent=temaEscuro?'Ativado':'Desativado';
-  const tog=$('tema-toggle'),knob=$('tema-knob');
-  if(temaEscuro){tog.style.background='var(--v)';knob.style.right='2px';knob.style.left='auto';}
-  else{tog.style.background='var(--bd)';knob.style.left='2px';knob.style.right='auto';}
+// ── TEMA (claro/escuro com memória) ──
+function aplicaTema(claro){
+  document.body.classList.toggle('claro',!!claro);
+  try{localStorage.setItem('sobra_tema',claro?'claro':'escuro');}catch(e){}
+  const tog=$('tema-toggle'),knob=$('tema-knob'),sub=$('tema-sub'),emo=$('tema-emoji');
+  if(sub)sub.textContent=claro?'Desativado':'Ativado';
+  if(emo)emo.textContent=claro?'☀️':'🌙';
+  if(tog)tog.style.background=claro?'var(--bd)':'var(--v)';
+  if(knob){
+    if(claro){knob.style.left='2px';knob.style.right='auto';}
+    else{knob.style.left='auto';knob.style.right='2px';}
+  }
+  // Barra do navegador acompanha o tema (celular)
+  let meta=document.querySelector('meta[name="theme-color"]');
+  if(!meta){meta=document.createElement('meta');meta.name='theme-color';document.head.appendChild(meta);}
+  meta.content=claro?'#ffffff':'#111111';
 }
+function toggleTema(){aplicaTema(!document.body.classList.contains('claro'));}
+// Restaurar escolha salva
+(function(){try{if(localStorage.getItem('sobra_tema')==='claro')aplicaTema(true);else aplicaTema(false);}catch(e){}})();
 
 // ── LIMPAR DADOS ──
 async function limparDados(){
@@ -1718,7 +1817,7 @@ async function limparDados(){
     <div class="sh-lbl">Entra em qual fatura?</div>
     <div style="display:flex;align-items:center;gap:8px;background:var(--bg3);border-radius:11px;padding:8px;">
       <button onclick="mudaFatura(-1)" style="width:32px;height:32px;border-radius:8px;background:var(--bg2);color:var(--v);font-size:16px;">‹</button>
-      <div id="cp-fatura-lbl" style="flex:1;text-align:center;font-size:13px;font-weight:600;color:#fff;">—</div>
+      <div id="cp-fatura-lbl" style="flex:1;text-align:center;font-size:13px;font-weight:600;color:var(--tit);">—</div>
       <button onclick="mudaFatura(1)" style="width:32px;height:32px;border-radius:8px;background:var(--bg2);color:var(--v);font-size:16px;">›</button>
     </div>
     <div class="sh-actions">
