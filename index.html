@@ -318,6 +318,21 @@ body,.hdr,.bottom-nav,.rodape,.sheet,.tl-itens,.auth-box,.content>div{transition
 .cart-saldo{font-size:18px;font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums;letter-spacing:-0.3px;}
 .cart-meta{font-size:11px;color:var(--ts);margin-top:3px;}
 body.claro .cart-hero-val,body.claro .cart-hero-lbl,body.claro .cart-hero-fim,body.claro .cart-hero-fim strong{color:#fff;}
+
+/* ONBOARDING — itens com banco e categoria */
+.ob-nav{display:flex;gap:8px;align-items:center;}
+.ob-voltar{padding:14px 16px;border-radius:12px;background:var(--bg3);color:var(--ts);font-size:14px;font-weight:600;border:none;}
+.ob-item{background:var(--bg3);border-radius:14px;padding:14px;margin-bottom:10px;border:0.5px solid var(--bd);}
+.ob-item-head{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+.ob-item-nome{flex:1;padding:10px 12px;border:1.5px solid var(--bd);border-radius:10px;font-size:14px;font-weight:600;background:var(--bg2);color:var(--tit);}
+.ob-item-del{width:32px;height:32px;border-radius:8px;background:var(--rg);color:var(--r);font-size:18px;flex-shrink:0;border:none;}
+.ob-item-grid{display:flex;gap:8px;margin-bottom:8px;}
+.ob-item-grid input{flex:1;margin-bottom:0;}
+.ob-parc-lbl{font-size:10px;font-weight:700;color:var(--ts);text-transform:uppercase;letter-spacing:.05em;margin:10px 0 6px;}
+.ob-parc-row{display:flex;gap:6px;margin-bottom:6px;align-items:center;}
+.ob-parc-row input{margin-bottom:0;padding:9px 10px;}
+.ob-add-parc{width:100%;padding:9px;border-radius:9px;border:1px dashed var(--bd);background:transparent;color:var(--ts);font-size:12px;font-weight:600;margin-top:4px;}
+.ob-dot.on{background:var(--v);width:22px;border-radius:4px;}
 </style>
 </head>
 <body>
@@ -340,12 +355,12 @@ body.claro .cart-hero-val,body.claro .cart-hero-lbl,body.claro .cart-hero-fim,bo
 <!-- ONBOARDING -->
 <div id="scr-ob" class="scr">
   <div class="ob-wrap">
-    <div class="ob-dots"><span class="ob-dot on" id="obd-1"></span><span class="ob-dot" id="obd-2"></span><span class="ob-dot" id="obd-3"></span></div>
+    <div class="ob-dots"><span class="ob-dot on" id="obd-1"></span><span class="ob-dot" id="obd-2"></span><span class="ob-dot" id="obd-3"></span><span class="ob-dot" id="obd-4"></span></div>
 
     <!-- PASSO 1: bancos -->
     <div id="ob-passo-1">
       <div class="ob-tit">Quanto você tem<br>hoje?</div>
-      <div class="ob-sub">Informe seus bancos e o saldo atual. Só isso — depois é só lançar.</div>
+      <div class="ob-sub">Informe seus bancos e o saldo atual de cada um. Esse é o ponto de partida.</div>
       <div id="ob-bancos"></div>
       <button class="btn-add" onclick="obAddBanco()">+ Adicionar banco ou carteira</button>
       <div class="ob-foot">
@@ -353,18 +368,14 @@ body.claro .cart-hero-val,body.claro .cart-hero-lbl,body.claro .cart-hero-fim,bo
       </div>
     </div>
 
-    <!-- PASSO 2: renda -->
+    <!-- PASSO 2: rendas -->
     <div id="ob-passo-2" style="display:none;">
       <div class="ob-tit">De onde vem<br>seu dinheiro?</div>
-      <div class="ob-sub">Sua renda principal entra todo mês no calendário, sozinha. Você edita quando quiser.</div>
-      <div class="ob-lbl">Descrição</div>
-      <input class="sh-inp" type="text" id="ob-renda-desc" value="Salário"/>
-      <div class="ob-lbl">Valor (R$)</div>
-      <input class="sh-val" type="number" id="ob-renda-val" placeholder="0,00" inputmode="decimal"/>
-      <div class="ob-lbl">Que dia cai?</div>
-      <input class="sh-inp" type="number" id="ob-renda-dia" placeholder="Ex: 5" min="1" max="31" inputmode="numeric"/>
+      <div class="ob-sub">Salário, bico, aluguel que recebe... Cada renda entra sozinha todo mês. Adicione quantas quiser.</div>
+      <div id="ob-rendas"></div>
+      <button class="btn-add" onclick="obAddRenda()">+ Adicionar renda</button>
       <div class="ob-foot">
-        <button class="btn-p" onclick="obFinRenda()">Continuar →</button>
+        <div class="ob-nav"><button class="ob-voltar" onclick="obStep(1)">‹ Voltar</button><button class="btn-p" style="flex:1;" onclick="obFinRendas()">Continuar →</button></div>
         <button class="btn-add" style="margin-top:8px;border:none;" onclick="obStep(3)">Pular — não tenho renda fixa</button>
       </div>
     </div>
@@ -372,11 +383,23 @@ body.claro .cart-hero-val,body.claro .cart-hero-lbl,body.claro .cart-hero-fim,bo
     <!-- PASSO 3: contas do mês -->
     <div id="ob-passo-3" style="display:none;">
       <div class="ob-tit">Quais contas você<br>paga todo mês?</div>
-      <div class="ob-sub">Aluguel, internet, luz... Elas entram sozinhas em todos os meses. Pode pular e cadastrar depois.</div>
+      <div class="ob-sub">Aluguel, luz, internet... Cada uma entra sozinha em todos os meses, no banco que você escolher.</div>
       <div id="ob-contas"></div>
       <button class="btn-add" onclick="obAddConta()">+ Adicionar conta</button>
       <div class="ob-foot">
-        <button class="btn-p" onclick="obFinContas()">Montar meu mês 🎉</button>
+        <div class="ob-nav"><button class="ob-voltar" onclick="obStep(2)">‹ Voltar</button><button class="btn-p" style="flex:1;" onclick="obFinContas()">Continuar →</button></div>
+        <button class="btn-add" style="margin-top:8px;border:none;" onclick="obStep(4)">Pular esta etapa</button>
+      </div>
+    </div>
+
+    <!-- PASSO 4: cartões e parcelas que já correm -->
+    <div id="ob-passo-4" style="display:none;">
+      <div class="ob-tit">Tem cartão de<br>crédito?</div>
+      <div class="ob-sub">Cadastre seus cartões e as parcelas que já estão correndo. O app espalha nas faturas futuras sozinho.</div>
+      <div id="ob-cartoes"></div>
+      <button class="btn-add" onclick="obAddCartao()">+ Adicionar cartão</button>
+      <div class="ob-foot">
+        <div class="ob-nav"><button class="ob-voltar" onclick="obStep(3)">‹ Voltar</button><button class="btn-p" style="flex:1;" onclick="obFinCartoes()">Montar meu mês 🎉</button></div>
         <button class="btn-add" style="margin-top:8px;border:none;" onclick="obTermina()">Pular por enquanto</button>
       </div>
     </div>
@@ -554,6 +577,9 @@ const S={
   faturaView:null,
   // onboarding
   obBancos:[{nome:'',emoji:'🏦',saldo:''}],
+  obRendas:null,
+  obContas:null,
+  obCartoes:null,
 };
 
 // ── AUTH ──
@@ -716,73 +742,208 @@ function obAddBanco(){
 function obDel(i){S.obBancos.splice(i,1);obRender();}
 
 function obStep(n){
-  [1,2,3].forEach(i=>{
-    $('ob-passo-'+i).style.display=i===n?'block':'none';
+  [1,2,3,4].forEach(i=>{
+    const p=$('ob-passo-'+i);if(p)p.style.display=i===n?'block':'none';
     $('obd-'+i).classList.toggle('on',i<=n);
   });
+  if(n===2&&!S.obRendas)obInitRendas();
   if(n===3&&!S.obContas)obInitContas();
+  if(n===4&&!S.obCartoes)obInitCartoes();
+  window.scrollTo&&window.scrollTo(0,0);
+  const w=document.querySelector('#scr-ob');if(w)w.scrollTop=0;
 }
 
+// Helpers de UI reutilizáveis no onboarding
+function obOptsBanco(sel){
+  return S.carteiras.map(c=>`<option value="${c.id}"${c.id===sel?' selected':''}>${c.emoji} ${c.nome}</option>`).join('');
+}
+function obOptsCateg(sel){
+  let h='<option value="">Sem categoria</option>';
+  S.categorias.forEach(ct=>{h+=`<option value="${ct.id}"${ct.id===sel?' selected':''}>${ct.emoji} ${ct.nome}</option>`;});
+  h+='<option value="__nova">＋ Nova categoria…</option>';
+  return h;
+}
+// Cria categoria por texto digitado no onboarding (campo livre) e devolve o id
+async function obCriaCategoria(nome){
+  const ex=S.categorias.find(x=>x.nome.toLowerCase()===nome.trim().toLowerCase());
+  if(ex)return ex.id;
+  const{data}=await db.from('categorias').insert({user_id:S.user.id,nome:nome.trim(),emoji:'🏷️'}).select();
+  if(data&&data[0]){S.categorias.push(data[0]);return data[0].id;}
+  return null;
+}
+
+// PASSO 1 — bancos (já existe obRender/obAddBanco)
 async function obFin(){
   const validos=S.obBancos.filter(b=>b.nome.trim());
   if(!validos.length)return dlgInfo('Faltou o banco','Adicione pelo menos um banco ou carteira.');
+  // Evita duplicar se voltar e avançar de novo: só insere os que ainda não têm id
   for(const b of validos){
-    const{error}=await db.from('carteiras').insert({
-      user_id:S.user.id,nome:b.nome.trim(),
-      emoji:b.emoji,saldo:parseFloat(b.saldo)||0,
-    });
+    if(b._id)continue;
+    const{data,error}=await db.from('carteiras').insert({
+      user_id:S.user.id,nome:b.nome.trim(),emoji:b.emoji,saldo:parseFloat(b.saldo)||0,
+    }).select();
     if(error){await dlgInfo('Erro ao salvar',error.message);return;}
+    if(data&&data[0])b._id=data[0].id;
   }
   await carrega();
   obStep(2);
 }
 
-async function obFinRenda(){
-  const desc=$('ob-renda-desc').value.trim()||'Salário';
-  const val=parseFloat($('ob-renda-val').value);
-  const dia=parseInt($('ob-renda-dia').value);
-  if(!val||!dia)return dlgInfo('Faltou algo','Informe o valor e o dia que a renda cai — ou toque em "Pular".');
-  await db.from('fixos').insert({
-    user_id:S.user.id,descricao:desc,valor:val,tipo:'entrada',dia,
-    carteira_id:S.carteiras[0]?S.carteiras[0].id:null,parcelas:null,
-    mes_inicio:HJM+1,ano_inicio:HJA,ativo:true,
-  });
-  obStep(3);
+// PASSO 2 — múltiplas rendas, cada uma com banco e categoria
+function obInitRendas(){S.obRendas=[{desc:'Salário',valor:'',dia:'',banco:'',categ:''}];obRenderRendas();}
+function obRenderRendas(){
+  const b0=S.carteiras[0]?S.carteiras[0].id:'';
+  $('ob-rendas').innerHTML=S.obRendas.map((r,i)=>{
+    if(!r.banco)r.banco=b0;
+    return `<div class="ob-item">
+      <div class="ob-item-head">
+        <input class="ob-item-nome" type="text" placeholder="Ex: Salário, Bico" value="${r.desc||''}" oninput="S.obRendas[${i}].desc=this.value"/>
+        ${S.obRendas.length>1?`<button class="ob-item-del" onclick="obDelRenda(${i})">×</button>`:''}
+      </div>
+      <div class="ob-item-grid">
+        <input class="sh-inp" type="number" placeholder="Valor R$" inputmode="decimal" value="${r.valor}" oninput="S.obRendas[${i}].valor=this.value"/>
+        <input class="sh-inp" type="number" placeholder="Dia" min="1" max="31" inputmode="numeric" value="${r.dia}" oninput="S.obRendas[${i}].dia=this.value"/>
+      </div>
+      <select class="sh-sel" onchange="S.obRendas[${i}].banco=this.value">${obOptsBanco(r.banco)}</select>
+      <select class="sh-sel" style="margin-top:8px;" onchange="obSelCateg(this,'obRendas',${i})">${obOptsCateg(r.categ)}</select>
+    </div>`;
+  }).join('');
+}
+function obAddRenda(){S.obRendas.push({desc:'',valor:'',dia:'',banco:'',categ:''});obRenderRendas();}
+function obDelRenda(i){S.obRendas.splice(i,1);obRenderRendas();}
+async function obFinRendas(){
+  const validas=S.obRendas.filter(r=>r.desc.trim()&&parseFloat(r.valor)&&parseInt(r.dia));
+  for(const r of validas){
+    if(r._id)continue;
+    let catId=r.categ&&r.categ!=='__nova'?r.categ:null;
+    await db.from('fixos').insert({
+      user_id:S.user.id,descricao:r.desc.trim(),valor:parseFloat(r.valor),tipo:'entrada',
+      dia:parseInt(r.dia),carteira_id:r.banco||null,parcelas:null,categoria_id:catId,
+      mes_inicio:HJM+1,ano_inicio:HJA,ativo:true,
+    });
+    r._id=true;
+  }
+  await carrega();obStep(3);
 }
 
-function obInitContas(){
-  S.obContas=[{nome:'',valor:'',dia:''}];
-  obRenderContas();
-}
+// PASSO 3 — múltiplas contas, cada uma com banco e categoria
+function obInitContas(){S.obContas=[{nome:'',valor:'',dia:'',banco:'',categ:''}];obRenderContas();}
 function obRenderContas(){
-  $('ob-contas').innerHTML=S.obContas.map((ct,i)=>`
-    <div class="ob-conta-row">
-      <input class="sh-inp" style="flex:2;" type="text" placeholder="Ex: Aluguel" value="${ct.nome}" oninput="S.obContas[${i}].nome=this.value"/>
-      <input class="sh-inp" style="flex:1.4;" type="number" placeholder="R$" inputmode="decimal" value="${ct.valor}" oninput="S.obContas[${i}].valor=this.value"/>
-      <input class="sh-inp" style="flex:1;" type="number" placeholder="Dia" min="1" max="31" inputmode="numeric" value="${ct.dia}" oninput="S.obContas[${i}].dia=this.value"/>
-    </div>`).join('');
+  const b0=S.carteiras[0]?S.carteiras[0].id:'';
+  $('ob-contas').innerHTML=S.obContas.map((ct,i)=>{
+    if(!ct.banco)ct.banco=b0;
+    return `<div class="ob-item">
+      <div class="ob-item-head">
+        <input class="ob-item-nome" type="text" placeholder="Ex: Aluguel, Luz" value="${ct.nome||''}" oninput="S.obContas[${i}].nome=this.value"/>
+        ${S.obContas.length>1?`<button class="ob-item-del" onclick="obDelConta(${i})">×</button>`:''}
+      </div>
+      <div class="ob-item-grid">
+        <input class="sh-inp" type="number" placeholder="Valor R$" inputmode="decimal" value="${ct.valor}" oninput="S.obContas[${i}].valor=this.value"/>
+        <input class="sh-inp" type="number" placeholder="Dia" min="1" max="31" inputmode="numeric" value="${ct.dia}" oninput="S.obContas[${i}].dia=this.value"/>
+      </div>
+      <select class="sh-sel" onchange="S.obContas[${i}].banco=this.value">${obOptsBanco(ct.banco)}</select>
+      <select class="sh-sel" style="margin-top:8px;" onchange="obSelCateg(this,'obContas',${i})">${obOptsCateg(ct.categ)}</select>
+    </div>`;
+  }).join('');
 }
-function obAddConta(){
-  S.obContas.push({nome:'',valor:'',dia:''});
-  obRenderContas();
-}
+function obAddConta(){S.obContas.push({nome:'',valor:'',dia:'',banco:'',categ:''});obRenderContas();}
+function obDelConta(i){S.obContas.splice(i,1);obRenderContas();}
 async function obFinContas(){
   const validas=S.obContas.filter(ct=>ct.nome.trim()&&parseFloat(ct.valor)&&parseInt(ct.dia));
   for(const ct of validas){
+    if(ct._id)continue;
+    let catId=ct.categ&&ct.categ!=='__nova'?ct.categ:null;
     await db.from('fixos').insert({
       user_id:S.user.id,descricao:ct.nome.trim(),valor:parseFloat(ct.valor),tipo:'saida',
-      dia:parseInt(ct.dia),carteira_id:S.carteiras[0]?S.carteiras[0].id:null,parcelas:null,
+      dia:parseInt(ct.dia),carteira_id:ct.banco||null,parcelas:null,categoria_id:catId,
       mes_inicio:HJM+1,ano_inicio:HJA,ativo:true,
     });
+    ct._id=true;
   }
-  await obTermina(validas.length);
+  await carrega();obStep(4);
 }
-async function obTermina(qtd){
+
+// Seletor de categoria com opção "Nova" via texto
+async function obSelCateg(selEl,lista,i){
+  if(selEl.value==='__nova'){
+    const r=await dlgForm('Nova categoria',[
+      {id:'nome',label:'Nome',type:'text',placeholder:'Ex: Moradia, Mercado'},
+    ]);
+    if(!r||r==='__DELETE'||!r.nome||!r.nome.trim()){selEl.value=S[lista][i].categ||'';return;}
+    const id=await obCriaCategoria(r.nome);
+    S[lista][i].categ=id||'';
+    if(lista==='obRendas')obRenderRendas();else if(lista==='obContas')obRenderContas();else obRenderCartoes();
+  } else {
+    S[lista][i].categ=selEl.value;
+  }
+}
+
+// PASSO 4 — cartões + parcelas que já correm
+function obInitCartoes(){S.obCartoes=[];obRenderCartoes();}
+function obRenderCartoes(){
+  const b0=S.carteiras[0]?S.carteiras[0].id:'';
+  if(!S.obCartoes.length){$('ob-cartoes').innerHTML='<div style="font-size:12px;color:var(--ts);text-align:center;padding:10px 0;">Nenhum cartão ainda. Se você tem cartão de crédito, adicione abaixo.</div>';return;}
+  $('ob-cartoes').innerHTML=S.obCartoes.map((ct,i)=>{
+    if(!ct.banco)ct.banco=b0;
+    const parc=(ct.parcelas||[]).map((p,j)=>`
+      <div class="ob-parc-row">
+        <input class="sh-inp" style="flex:2;" type="text" placeholder="Ex: Geladeira" value="${p.desc||''}" oninput="S.obCartoes[${i}].parcelas[${j}].desc=this.value"/>
+        <input class="sh-inp" style="flex:1.2;" type="number" placeholder="Parcela R$" inputmode="decimal" value="${p.valor}" oninput="S.obCartoes[${i}].parcelas[${j}].valor=this.value"/>
+        <input class="sh-inp" style="flex:.9;" type="number" placeholder="Faltam" min="1" inputmode="numeric" value="${p.faltam}" oninput="S.obCartoes[${i}].parcelas[${j}].faltam=this.value"/>
+        <button class="ob-item-del" onclick="obDelParc(${i},${j})">×</button>
+      </div>`).join('');
+    return `<div class="ob-item">
+      <div class="ob-item-head">
+        <input class="ob-item-nome" type="text" placeholder="Nome do cartão (ex: Nubank)" value="${ct.nome||''}" oninput="S.obCartoes[${i}].nome=this.value"/>
+        <button class="ob-item-del" onclick="obDelCartao(${i})">×</button>
+      </div>
+      <div class="ob-item-grid">
+        <input class="sh-inp" type="number" placeholder="Dia vencimento" min="1" max="31" inputmode="numeric" value="${ct.venc||''}" oninput="S.obCartoes[${i}].venc=this.value"/>
+        <select class="sh-sel" onchange="S.obCartoes[${i}].banco=this.value">${obOptsBanco(ct.banco)}</select>
+      </div>
+      <div class="ob-parc-lbl">Parcelas que já estão correndo (opcional)</div>
+      ${parc}
+      <button class="ob-add-parc" onclick="obAddParc(${i})">+ Parcela em andamento</button>
+    </div>`;
+  }).join('');
+}
+function obAddCartao(){S.obCartoes.push({nome:'',venc:'',banco:'',parcelas:[]});obRenderCartoes();}
+function obDelCartao(i){S.obCartoes.splice(i,1);obRenderCartoes();}
+function obAddParc(i){S.obCartoes[i].parcelas.push({desc:'',valor:'',faltam:''});obRenderCartoes();}
+function obDelParc(i,j){S.obCartoes[i].parcelas.splice(j,1);obRenderCartoes();}
+async function obFinCartoes(){
+  const validos=S.obCartoes.filter(ct=>ct.nome.trim()&&parseInt(ct.venc));
+  for(const ct of validos){
+    const{data}=await db.from('cartoes').insert({
+      user_id:S.user.id,nome:ct.nome.trim(),emoji:'💳',
+      dia_vencimento:parseInt(ct.venc),carteira_id:ct.banco||null,
+    }).select();
+    const cartaoId=data&&data[0]?data[0].id:null;
+    if(!cartaoId)continue;
+    // Espalhar parcelas que já correm, a partir do mês atual
+    for(const p of (ct.parcelas||[])){
+      const v=parseFloat(p.valor),faltam=parseInt(p.faltam);
+      if(!v||!faltam)continue;
+      let m=HJM,a=HJA;
+      for(let k=0;k<faltam;k++){
+        await db.from('compras_cartao').insert({
+          user_id:S.user.id,cartao_id:cartaoId,descricao:p.desc.trim()||'Parcela',
+          valor:v,dia:parseInt(ct.venc),mes_fatura:m+1,ano_fatura:a,
+          parcelas:faltam,parcela_atual:k+1,categoria_id:null,
+        });
+        m++;if(m>11){m=0;a++;}
+      }
+    }
+  }
+  await obTermina(true);
+}
+
+async function obTermina(montou){
   await carrega();
   S._scrollHoje=true;
   mostrar('scr-app');
   render();
-  toast(qtd?'🎉 Seu mês está montado!':'✓ Pronto! Toque no + para lançar');
+  toast(montou?'🎉 Seu mês está montado!':'✓ Pronto! Toque no + para lançar');
 }
 
 // ── SALDO ──
