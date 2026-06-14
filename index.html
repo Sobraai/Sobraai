@@ -341,6 +341,82 @@ body.claro .cart-hero-val,body.claro .cart-hero-lbl,body.claro .cart-hero-fim,bo
 .ob-parc-duo{display:flex;gap:10px;align-items:flex-end;}
 .ob-parc-duo input{margin-bottom:0;}
 .ob-parc-del{width:32px;height:38px;border-radius:8px;background:var(--rg);color:var(--r);font-size:16px;flex-shrink:0;border:none;}
+
+/* Swatches de cor de banco */
+.banco-swatch{width:34px;height:34px;border-radius:50%;border:none;cursor:pointer;padding:0;}
+
+/* ═══════════ POLIMENTO PREMIUM v3.7 ═══════════ */
+/* Tipografia mais refinada e fluida */
+.hero-saldo,.cart-hero-val,.tl-saldo,.tl-item-val,.rodape-val,.resumo-val{font-feature-settings:'tnum' 1,'cv01' 1;letter-spacing:-0.5px;}
+.brand,.sh-tit,.ob-tit,.cart-nome{letter-spacing:-0.4px;}
+
+/* Fundo com profundidade — gradiente radial sutil verde no topo */
+body{background:radial-gradient(140% 60% at 50% -10%, rgba(34,197,94,.06) 0%, transparent 55%), var(--bg);}
+body.claro{background:radial-gradient(140% 60% at 50% -10%, rgba(22,163,74,.07) 0%, transparent 55%), var(--bg);}
+
+/* Header glassmorphism premium */
+.hdr{backdrop-filter:saturate(160%) blur(8px);-webkit-backdrop-filter:saturate(160%) blur(8px);}
+.brand span{background:linear-gradient(135deg,#22c55e,#4ade80);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;text-shadow:none;filter:drop-shadow(0 0 12px rgba(34,197,94,.35));}
+
+/* Cartão-herói do Resumo com brilho interno e borda viva */
+.cart-hero{position:relative;overflow:hidden;background:linear-gradient(145deg,#1c9e52,#16a34a 55%,#0f7a3c);box-shadow:0 10px 40px rgba(34,197,94,.32),inset 0 1px 0 rgba(255,255,255,.18);}
+.cart-hero::before{content:"";position:absolute;top:-60%;right:-20%;width:70%;height:200%;background:radial-gradient(circle,rgba(255,255,255,.18),transparent 70%);pointer-events:none;}
+.cart-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.08) 50%,transparent 70%);pointer-events:none;}
+
+/* Badges de banco com leve relevo */
+.cart-card{position:relative;transition:transform .14s cubic-bezier(.34,1.4,.64,1),box-shadow .14s ease,border-color .14s ease;}
+.cart-card:active{transform:scale(.98) translateY(1px);}
+.cart-card:hover{border-color:rgba(34,197,94,.25);box-shadow:0 4px 18px rgba(0,0,0,.3);}
+
+/* Timeline: ponto de hoje com halo premium e anel pulsante */
+.tl-dot.hj{background:radial-gradient(circle at 35% 30%,#4ade80,#16a34a);box-shadow:0 0 0 3px rgba(34,197,94,.18),0 0 18px rgba(34,197,94,.6);}
+.tl-dot{box-shadow:0 0 0 2px var(--bg);}
+
+/* Itens do dia: cartão com profundidade ao expandir */
+.tl-itens{background:linear-gradient(180deg,var(--bg3),var(--bg2));border:0.5px solid rgba(255,255,255,.05);box-shadow:0 6px 22px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.03);}
+.tl-item{transition:background .14s ease,padding-left .14s ease;}
+.tl-item:active{background:var(--bg2);padding-left:18px;}
+
+/* FAB premium: gradiente, brilho, mola */
+.bnav-fab{background:radial-gradient(circle at 35% 30%,#34d977,#16a34a);box-shadow:0 8px 24px rgba(34,197,94,.45),0 2px 8px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.25);border:0.5px solid rgba(255,255,255,.12);}
+.bnav-fab:active{transform:scale(.9) rotate(0deg);}
+#fab-ic{font-weight:300;}
+
+/* Nav inferior premium */
+.bottom-nav{box-shadow:0 -1px 0 rgba(255,255,255,.04),0 -8px 24px rgba(0,0,0,.28);}
+.bnav-btn.active .bnav-ic{transform:translateY(-1px) scale(1.08);transition:transform .2s cubic-bezier(.34,1.5,.64,1);}
+.bnav-ic{transition:transform .2s ease;}
+
+/* Botões premium: gradiente sutil e brilho ao topo */
+.btn-p,.btn-salv{background:linear-gradient(180deg,#26cc63,#16a34a);box-shadow:0 4px 14px rgba(34,197,94,.32),inset 0 1px 0 rgba(255,255,255,.22);}
+.btn-p:active,.btn-salv:active{transform:translateY(1px) scale(.99);box-shadow:0 2px 8px rgba(34,197,94,.3);}
+
+/* Inputs premium: foco com anel duplo */
+.sh-inp:focus,.sh-val:focus,.sh-sel:focus,.inp:focus,.banco-nome:focus,.banco-saldo:focus{border-color:var(--v);box-shadow:0 0 0 4px rgba(34,197,94,.12),inset 0 1px 2px rgba(0,0,0,.2);}
+
+/* Resumo: barras de categoria com brilho e animação de entrada */
+.resumo{position:relative;overflow:hidden;background:linear-gradient(160deg,var(--bg2),var(--bg3));box-shadow:0 6px 28px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.04);}
+.resumo-bar-fill{background:linear-gradient(90deg,#f87171,#fb7185);box-shadow:0 0 8px rgba(248,113,113,.4);animation:barGrow .6s cubic-bezier(.32,.72,.35,1);}
+@keyframes barGrow{from{width:0 !important;}}
+
+/* Sheets: handle premium e entrada com mola */
+.sh-handle{background:linear-gradient(90deg,var(--bd),var(--ts),var(--bd));opacity:.6;}
+.sheet{box-shadow:0 -10px 50px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.05);}
+
+/* Toast premium */
+#toast{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 8px 30px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.08);}
+
+/* Onboarding: itens com leve elevação */
+.ob-item{box-shadow:0 2px 12px rgba(0,0,0,.2);transition:box-shadow .2s ease;}
+.ob-dot.on{box-shadow:0 0 10px rgba(34,197,94,.5);}
+.banco-item{box-shadow:0 2px 10px rgba(0,0,0,.18);}
+
+/* Scrollbar invisível em tudo */
+*::-webkit-scrollbar{display:none;}
+*{scrollbar-width:none;}
+
+/* Seleção de texto verde */
+::selection{background:rgba(34,197,94,.28);}
 </style>
 </head>
 <body>
@@ -555,6 +631,19 @@ const hoje=new Date();
 const HJD=hoje.getDate(),HJM=hoje.getMonth(),HJA=hoje.getFullYear();
 
 const $=id=>document.getElementById(id);
+// ── BANCOS: inicial colorida (sem logos, sem risco autoral) ──
+const CORES_BANCO=['#820ad1','#0070e0','#16a34a','#f59e0b','#ef4444','#ec4899','#06b6d4','#71717a'];
+function inicialBanco(nome){return (nome||'?').trim().charAt(0).toUpperCase()||'?';}
+function corBanco(cart){return (cart&&cart.cor)||'#71717a';}
+// HTML do badge: tam = lado em px, fonte proporcional
+function badgeBanco(cart,tam){
+  tam=tam||44;
+  const f=Math.round(tam*0.42);
+  const rad=Math.round(tam*0.27);
+  return `<span style="width:${tam}px;height:${tam}px;border-radius:${rad}px;background:${corBanco(cart)};display:inline-flex;align-items:center;justify-content:center;font-size:${f}px;font-weight:800;color:#fff;flex-shrink:0;">${inicialBanco(cart&&cart.nome)}</span>`;
+}
+// Versão para <option> de <select> (não aceita HTML): bolinha colorida via emoji círculo não dá; usa nome só
+function optBanco(c,sel){return `<option value="${c.id}"${c.id===sel?' selected':''}>${c.nome}</option>`;}
 const brl=v=>Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 
 const S={
@@ -583,7 +672,7 @@ const S={
   cartaoEditId:null,
   faturaView:null,
   // onboarding
-  obBancos:[{nome:'',emoji:'🏦',saldo:''}],
+  obBancos:[{nome:'',cor:'#820ad1',saldo:''}],
   obRendas:null,
   obContas:null,
   obCartoes:null,
@@ -637,8 +726,8 @@ async function iniciaFluxo(u){
 async function abreTransfer(){
   if(S.carteiras.length<2){await dlgInfo('Transferência','Você precisa de pelo menos 2 carteiras. Adicione outra na aba Carteiras.');return;}
   const r=await dlgForm('Transferência',[
-    {id:'de',label:'Sai de qual banco?',type:'select',value:S.carteiras[0].id,options:S.carteiras.map(x=>({v:x.id,t:`${x.emoji} ${x.nome}`}))},
-    {id:'para',label:'Vai para qual banco?',type:'select',value:S.carteiras[1].id,options:S.carteiras.map(x=>({v:x.id,t:`${x.emoji} ${x.nome}`}))},
+    {id:'de',label:'Sai de qual banco?',type:'select',value:S.carteiras[0].id,options:S.carteiras.map(x=>({v:x.id,t:x.nome}))},
+    {id:'para',label:'Vai para qual banco?',type:'select',value:S.carteiras[1].id,options:S.carteiras.map(x=>({v:x.id,t:x.nome}))},
     {id:'valor',label:'Valor (R$)',type:'number',placeholder:'0,00'},
     {id:'dia',label:'Dia',type:'number',value:(S.mes===HJM&&S.ano===HJA)?HJD:1},
   ]);
@@ -749,25 +838,31 @@ async function seedCategorias(){
 
 // ── ONBOARDING ──
 function obRender(){
-  $('ob-bancos').innerHTML=S.obBancos.map((b,i)=>`
+  $('ob-bancos').innerHTML=S.obBancos.map((b,i)=>{
+    if(!b.cor)b.cor=CORES_BANCO[i%CORES_BANCO.length];
+    return `
     <div class="banco-item">
-      <div class="banco-emoji" onclick="obEmoji(${i})">${b.emoji}</div>
+      <div onclick="obCorBanco(${i})" title="Tocar troca a cor">${badgeBanco({nome:b.nome,cor:b.cor},40)}</div>
       <div class="banco-fields">
-        <input class="banco-nome" type="text" placeholder="Nome (ex: Nubank)" value="${b.nome}" oninput="S.obBancos[${i}].nome=this.value"/>
+        <input class="banco-nome" type="text" placeholder="Nome (ex: Nubank)" value="${(b.nome||'').replace(/"/g,'&quot;')}" oninput="S.obBancos[${i}].nome=this.value;obRefreshBadge(${i})"/>
         <input class="banco-saldo" type="number" placeholder="Saldo atual R$" value="${b.saldo}" inputmode="decimal" oninput="S.obBancos[${i}].saldo=this.value"/>
       </div>
       ${S.obBancos.length>1?`<button class="banco-del" onclick="obDel(${i})">×</button>`:''}
-    </div>`).join('');
+    </div>`;}).join('');
 }
-
-const EMOJIS=['🏦','💳','💰','🏧','💵','🐷','📱','🏠'];
-function obEmoji(i){
-  const idx=EMOJIS.indexOf(S.obBancos[i].emoji);
-  S.obBancos[i].emoji=EMOJIS[(idx+1)%EMOJIS.length];
+// Trocar cor: cicla pela paleta ao tocar no badge
+function obCorBanco(i){
+  const atual=CORES_BANCO.indexOf(S.obBancos[i].cor);
+  S.obBancos[i].cor=CORES_BANCO[(atual+1)%CORES_BANCO.length];
   obRender();
 }
+// Atualiza só a inicial ao digitar (sem re-render que perderia o foco)
+function obRefreshBadge(i){
+  const item=$('ob-bancos').children[i];
+  if(item){const badge=item.firstElementChild.firstElementChild;if(badge)badge.textContent=inicialBanco(S.obBancos[i].nome);}
+}
 function obAddBanco(){
-  S.obBancos.push({nome:'',emoji:'🏦',saldo:''});
+  S.obBancos.push({nome:'',cor:CORES_BANCO[S.obBancos.length%CORES_BANCO.length],saldo:''});
   obRender();
 }
 function obDel(i){S.obBancos.splice(i,1);obRender();}
@@ -786,7 +881,7 @@ function obStep(n){
 
 // Helpers de UI reutilizáveis no onboarding
 function obOptsBanco(sel){
-  return S.carteiras.map(c=>`<option value="${c.id}"${c.id===sel?' selected':''}>${c.emoji} ${c.nome}</option>`).join('');
+  return S.carteiras.map(c=>optBanco(c,sel)).join('');
 }
 function obOptsCateg(sel,tipo){
   tipo=tipo||'saida';
@@ -812,7 +907,7 @@ async function obFin(){
   for(const b of validos){
     if(b._id)continue;
     const{data,error}=await db.from('carteiras').insert({
-      user_id:S.user.id,nome:b.nome.trim(),emoji:b.emoji,saldo:parseFloat(b.saldo)||0,
+      user_id:S.user.id,nome:b.nome.trim(),emoji:'🏦',cor:b.cor||'#71717a',saldo:parseFloat(b.saldo)||0,
     }).select();
     if(error){await dlgInfo('Erro ao salvar',error.message);return;}
     if(data&&data[0])b._id=data[0].id;
@@ -1245,7 +1340,7 @@ function render(){
       h+=`<div class="tl-item" onclick="event.stopPropagation();abreFixo('${f.id}')">
         <div class="tl-item-info">
           <div class="tl-item-nome">${f.descricao} <span class="tl-tag">${tag}</span></div>
-          ${cart?`<div class="tl-item-sub">${cart.emoji} ${cart.nome}</div>`:''}
+          ${cart?`<div class="tl-item-sub">${cart.nome}</div>`:''}
         </div>
         <div class="tl-item-val ${isEnt?'pos':'neg'}">${isEnt?'+':'-'}R$${brl(f.valor)}</div>
       </div>`;
@@ -1255,7 +1350,7 @@ function render(){
       const isEnt=l.tipo==='entrada';
       const cart=S.carteiras.find(c=>c.id===l.carteira_id);
       const cat=nomeCateg(l.categoria_id);
-      const sub=[cart?`${cart.emoji} ${cart.nome}`:null,cat].filter(Boolean).join(' · ');
+      const sub=[cart?cart.nome:null,cat].filter(Boolean).join(' · ');
       h+=`<div class="tl-item" onclick="event.stopPropagation();abreLanc(${d},'${l.id}')">
         <div class="tl-item-info">
           <div class="tl-item-nome">${l.descricao}</div>
@@ -1352,7 +1447,7 @@ function abreLanc(dia,editId){
 }
 
 function renderCartSel(selId){
-  $('l-cart').innerHTML=S.carteiras.map(c=>`<option value="${c.id}"${c.id===selId?' selected':''}>${c.emoji} ${c.nome}</option>`).join('');
+  $('l-cart').innerHTML=S.carteiras.map(c=>optBanco(c,selId)).join('');
 }
 
 function setTipo(t){
@@ -1365,11 +1460,14 @@ function setTipo(t){
 function fechaSh(){$('sh-lanc').classList.remove('aberto');}
 
 async function salvaLanc(){
-  const val=parseFloat($('l-val').value);
+  let val=parseFloat($('l-val').value);
   const desc=$('l-desc').value.trim();
-  const dia=parseInt($('l-dia').value);
+  let dia=parseInt($('l-dia').value);
   const cartId=$('l-cart').value;
   if(!val||!desc||!dia)return dlgInfo('Faltou algo','Preencha valor, descrição e dia.');
+  if(val<0)val=Math.abs(val); // o tipo (entrada/saída) define o sinal, não o número
+  const maxDia=new Date(S.ano,S.mes+1,0).getDate();
+  if(dia<1||dia>maxDia)return dlgInfo('Dia inválido',`Este mês vai do dia 1 ao ${maxDia}.`);
   const categVal=$('l-categ').value;
   const dados={
     user_id:S.user.id,descricao:desc,valor:val,
@@ -1431,7 +1529,7 @@ function abreFixo(editId){
 }
 
 function renderFixoCartSel(selId){
-  $('f-cart').innerHTML=S.carteiras.map(c=>`<option value="${c.id}"${c.id===selId?' selected':''}>${c.emoji} ${c.nome}</option>`).join('');
+  $('f-cart').innerHTML=S.carteiras.map(c=>optBanco(c,selId)).join('');
 }
 
 function setFixoTipo(t){
@@ -1814,7 +1912,7 @@ function renderCarteiras(){
     const variou=fimMes-hoje;
     return `
     <div class="cart-card" onclick="editarCarteira('${cart.id}')">
-      <div class="cart-emoji">${cart.emoji}</div>
+      ${badgeBanco(cart,46)}
       <div style="flex:1;min-width:0;">
         <div class="cart-nome">${cart.nome}</div>
         <div class="cart-saldo" style="color:${hoje<0?'var(--r)':'var(--v)'}">${hoje<0?'-':''}R$ ${Number(Math.abs(hoje)).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
@@ -1824,24 +1922,58 @@ function renderCarteiras(){
     </div>`;}).join('');
   lista.innerHTML=h;
 }
+// Diálogo de carteira com seletor de cor + preview da inicial
+let _bancoResolve=null,_bancoCor=null;
+function dlgBanco(titulo,cart){
+  return new Promise(res=>{
+    _bancoResolve=res;
+    _bancoCor=cart?corBanco(cart):CORES_BANCO[0];
+    const nome=cart?cart.nome:'';
+    const saldo=cart?cart.saldo:'';
+    const swatches=CORES_BANCO.map(cor=>`<button onclick="bancoSetCor('${cor}')" data-cor="${cor}" class="banco-swatch" style="background:${cor};${cor===_bancoCor?'outline:3px solid var(--tit);outline-offset:2px;':''}"></button>`).join('');
+    let h=`<div class="sh-handle"></div><div class="sh-tit">${titulo}</div>
+      <div style="display:flex;align-items:center;gap:12px;margin:14px 0;">
+        <span id="banco-preview">${badgeBanco({nome,cor:_bancoCor},54)}</span>
+        <input class="sh-inp" id="banco-nome" type="text" placeholder="Ex: Nubank, Caixa, Carteira" value="${(nome||'').replace(/"/g,'&quot;')}" oninput="bancoPreview()" style="flex:1;margin:0;"/>
+      </div>
+      <div class="sh-lbl">Cor</div>
+      <div id="banco-cores" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">${swatches}</div>
+      <div class="sh-lbl">${cart?'Saldo inicial':'Saldo atual'} (R$)</div>
+      <input class="sh-inp" id="banco-saldo" type="number" inputmode="decimal" placeholder="0,00" value="${saldo}"/>
+      <div class="sh-actions">
+        <button class="btn-canc" onclick="dlgBancoFecha(null)">Cancelar</button>
+        <button class="btn-salv" onclick="dlgBancoColeta()">Salvar</button>
+      </div>`;
+    if(cart)h+=`<button class="btn-del" onclick="dlgBancoFecha('__DELETE')">Apagar carteira</button>`;
+    $('dlg-box').innerHTML=h;
+    $('dlg-ov').classList.add('aberto');
+  });
+}
+function bancoSetCor(cor){
+  _bancoCor=cor;
+  document.querySelectorAll('#banco-cores .banco-swatch').forEach(b=>{
+    b.style.outline=b.dataset.cor===cor?'3px solid var(--tit)':'none';
+    b.style.outlineOffset='2px';
+  });
+  bancoPreview();
+}
+function bancoPreview(){
+  const nome=$('banco-nome').value;
+  $('banco-preview').innerHTML=badgeBanco({nome,cor:_bancoCor},54);
+}
+function dlgBancoFecha(v){$('dlg-ov').classList.remove('aberto');if(_bancoResolve){const r=_bancoResolve;_bancoResolve=null;r(v);}}
+function dlgBancoColeta(){dlgBancoFecha({nome:$('banco-nome').value,saldo:$('banco-saldo').value,cor:_bancoCor});}
+
 async function novaCarteira(){
-  const r=await dlgForm('Nova carteira',[
-    {id:'nome',label:'Nome do banco',type:'text',placeholder:'Ex: Nubank, Caixa, Carteira'},
-    {id:'emoji',label:'Emoji',type:'text',value:'🏦'},
-    {id:'saldo',label:'Saldo atual (R$)',type:'number',placeholder:'0,00'},
-  ]);
+  const r=await dlgBanco('Nova carteira',null);
   if(!r||r==='__DELETE'||!r.nome||!r.nome.trim())return;
-  await db.from('carteiras').insert({user_id:S.user.id,nome:r.nome.trim(),emoji:r.emoji||'🏦',saldo:parseFloat(r.saldo)||0});
+  await db.from('carteiras').insert({user_id:S.user.id,nome:r.nome.trim(),emoji:'🏦',cor:r.cor,saldo:parseFloat(r.saldo)||0});
   await carrega();renderCarteiras();render();toast('✓ Carteira criada');
 }
 async function editarCarteira(id){
   const cart=S.carteiras.find(c=>c.id===id);
   if(!cart)return;
-  const r=await dlgForm('Editar carteira',[
-    {id:'nome',label:'Nome',type:'text',value:cart.nome},
-    {id:'emoji',label:'Emoji',type:'text',value:cart.emoji},
-    {id:'saldo',label:'Saldo inicial (R$)',type:'number',value:cart.saldo},
-  ],{delTxt:'Apagar carteira'});
+  const r=await dlgBanco('Editar carteira',cart);
   if(!r)return;
   if(r==='__DELETE'){
     const ok=await dlgConfirm('Apagar carteira?',`"${cart.nome}" será removida. Lançamentos e fixos dela ficam sem banco.`,'Apagar',true);
@@ -1855,7 +1987,7 @@ async function editarCarteira(id){
     return;
   }
   if(!r.nome||!r.nome.trim())return;
-  await db.from('carteiras').update({nome:r.nome.trim(),emoji:r.emoji||cart.emoji,saldo:parseFloat(r.saldo)||0}).eq('id',id);
+  await db.from('carteiras').update({nome:r.nome.trim(),cor:r.cor,saldo:parseFloat(r.saldo)||0}).eq('id',id);
   await carrega();renderCarteiras();render();
 }
 
@@ -2035,7 +2167,7 @@ async function pagarFatura(cartaoId,mes,ano){
   if(!S.carteiras.length){await dlgInfo('Sem bancos','Cadastre um banco na aba Carteiras para pagar a fatura.');return;}
   const v=valorFatura(cartaoId,mes,ano);
   const r=await dlgForm('Pagar fatura '+ct.nome,[
-    {id:'banco',label:'Sai de qual banco?',type:'select',value:ct.carteira_id||S.carteiras[0].id,options:S.carteiras.map(x=>({v:x.id,t:`${x.emoji} ${x.nome}`}))},
+    {id:'banco',label:'Sai de qual banco?',type:'select',value:ct.carteira_id||S.carteiras[0].id,options:S.carteiras.map(x=>({v:x.id,t:x.nome}))},
     {id:'valor',label:'Valor pago (R$)',type:'number',value:v},
     {id:'dia',label:'Dia do pagamento',type:'number',value:ct.dia_vencimento},
   ]);
