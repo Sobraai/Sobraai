@@ -333,6 +333,14 @@ body.claro .cart-hero-val,body.claro .cart-hero-lbl,body.claro .cart-hero-fim,bo
 .ob-parc-row input{margin-bottom:0;padding:9px 10px;}
 .ob-add-parc{width:100%;padding:9px;border-radius:9px;border:1px dashed var(--bd);background:transparent;color:var(--ts);font-size:12px;font-weight:600;margin-top:4px;}
 .ob-dot.on{background:var(--v);width:22px;border-radius:4px;}
+
+/* ONBOARDING cartão redesenhado */
+.ob-mini-lbl{font-size:10px;font-weight:700;color:var(--ts);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;}
+.ob-parc-bloco{margin-top:14px;padding-top:14px;border-top:0.5px solid var(--bd);}
+.ob-parc-card{background:var(--bg2);border-radius:11px;padding:12px;border:0.5px solid var(--bd);margin-bottom:8px;}
+.ob-parc-duo{display:flex;gap:10px;align-items:flex-end;}
+.ob-parc-duo input{margin-bottom:0;}
+.ob-parc-del{width:32px;height:38px;border-radius:8px;background:var(--rg);color:var(--r);font-size:16px;flex-shrink:0;border:none;}
 </style>
 </head>
 <body>
@@ -427,8 +435,7 @@ body.claro .cart-hero-val,body.claro .cart-hero-lbl,body.claro .cart-hero-fim,bo
   <div class="content" id="content"></div>
   <div class="content" id="content-carteiras" style="display:none;">
     <div style="padding:16px;">
-      <div style="font-size:20px;font-weight:700;color:var(--tit);margin-bottom:6px;">Minhas carteiras</div>
-      <div style="font-size:12px;color:var(--ts);margin-bottom:16px;">O saldo aqui é o ponto de partida. Para mudanças do dia a dia, lance no calendário.</div>
+      <div id="resumo-painel"></div>
       <div id="lista-carteiras"></div>
       <button class="btn-add" onclick="novaCarteira()" style="margin-top:8px;">+ Adicionar carteira</button>
     </div>
@@ -481,7 +488,7 @@ body.claro .cart-hero-val,body.claro .cart-hero-lbl,body.claro .cart-hero-fim,bo
   </div>
   <div class="bottom-nav">
     <button class="bnav-btn active" id="bnav-mes" onclick="abaApp('mes')"><span class="bnav-ic">📅</span><span class="bnav-lbl">Mês</span></button>
-    <button class="bnav-btn" id="bnav-cart" onclick="abaApp('carteiras')"><span class="bnav-ic">🏦</span><span class="bnav-lbl">Carteiras</span></button>
+    <button class="bnav-btn" id="bnav-cart" onclick="abaApp('carteiras')"><span class="bnav-ic">🏦</span><span class="bnav-lbl">Resumo</span></button>
     <button class="bnav-fab" onclick="toggleFab()"><span id="fab-ic">+</span></button>
     <button class="bnav-btn" id="bnav-cartoes" onclick="abaApp('cartoes')"><span class="bnav-ic">💳</span><span class="bnav-lbl">Cartões</span></button>
     <button class="bnav-btn" id="bnav-config" onclick="abaApp('config')"><span class="bnav-ic">⚙️</span><span class="bnav-lbl">Config</span></button>
@@ -912,24 +919,32 @@ function obRenderCartoes(){
   $('ob-cartoes').innerHTML=S.obCartoes.map((ct,i)=>{
     if(!ct.banco)ct.banco=b0;
     const parc=(ct.parcelas||[]).map((p,j)=>`
-      <div class="ob-parc-row">
-        <input class="sh-inp" style="flex:2;" type="text" placeholder="Ex: Geladeira" value="${p.desc||''}" oninput="S.obCartoes[${i}].parcelas[${j}].desc=this.value"/>
-        <input class="sh-inp" style="flex:1.2;" type="number" placeholder="Parcela R$" inputmode="decimal" value="${p.valor}" oninput="S.obCartoes[${i}].parcelas[${j}].valor=this.value"/>
-        <input class="sh-inp" style="flex:.9;" type="number" placeholder="Faltam" min="1" inputmode="numeric" value="${p.faltam}" oninput="S.obCartoes[${i}].parcelas[${j}].faltam=this.value"/>
-        <button class="ob-item-del" onclick="obDelParc(${i},${j})">×</button>
+      <div class="ob-parc-card">
+        <div class="ob-mini-lbl">O que você comprou</div>
+        <input class="sh-inp" type="text" placeholder="Ex: Geladeira" value="${p.desc||''}" oninput="S.obCartoes[${i}].parcelas[${j}].desc=this.value" style="margin-bottom:10px;"/>
+        <div class="ob-parc-duo">
+          <div style="flex:1;"><div class="ob-mini-lbl">Valor da parcela</div><input class="sh-inp" type="number" placeholder="R$" inputmode="decimal" value="${p.valor}" oninput="S.obCartoes[${i}].parcelas[${j}].valor=this.value"/></div>
+          <div style="flex:1;"><div class="ob-mini-lbl">Quantas faltam</div><input class="sh-inp" type="number" placeholder="Ex: 8" min="1" inputmode="numeric" value="${p.faltam}" oninput="S.obCartoes[${i}].parcelas[${j}].faltam=this.value"/></div>
+          <button class="ob-parc-del" onclick="obDelParc(${i},${j})">×</button>
+        </div>
       </div>`).join('');
     return `<div class="ob-item">
       <div class="ob-item-head">
-        <input class="ob-item-nome" type="text" placeholder="Nome do cartão (ex: Nubank)" value="${ct.nome||''}" oninput="S.obCartoes[${i}].nome=this.value"/>
+        <span style="font-size:14px;font-weight:700;color:var(--tit);">💳 Cartão</span>
         <button class="ob-item-del" onclick="obDelCartao(${i})">×</button>
       </div>
-      <div class="ob-item-grid">
-        <input class="sh-inp" type="number" placeholder="Dia vencimento" min="1" max="31" inputmode="numeric" value="${ct.venc||''}" oninput="S.obCartoes[${i}].venc=this.value"/>
-        <select class="sh-sel" onchange="S.obCartoes[${i}].banco=this.value">${obOptsBanco(ct.banco)}</select>
+      <div class="ob-mini-lbl">Nome do cartão</div>
+      <input class="sh-inp" type="text" placeholder="Ex: Nubank" value="${ct.nome||''}" oninput="S.obCartoes[${i}].nome=this.value" style="margin-bottom:12px;"/>
+      <div class="ob-parc-duo" style="margin-bottom:2px;">
+        <div style="flex:1;"><div class="ob-mini-lbl">Vence dia</div><input class="sh-inp" type="number" placeholder="Ex: 10" min="1" max="31" inputmode="numeric" value="${ct.venc||''}" oninput="S.obCartoes[${i}].venc=this.value"/></div>
+        <div style="flex:1.6;"><div class="ob-mini-lbl">Paga com</div><select class="sh-sel" onchange="S.obCartoes[${i}].banco=this.value">${obOptsBanco(ct.banco)}</select></div>
       </div>
-      <div class="ob-parc-lbl">Parcelas que já estão correndo (opcional)</div>
-      ${parc}
-      <button class="ob-add-parc" onclick="obAddParc(${i})">+ Parcela em andamento</button>
+      <div class="ob-parc-bloco">
+        <div style="font-size:12px;font-weight:700;color:var(--tit);margin-bottom:2px;">Já tem parcelas correndo?</div>
+        <div style="font-size:11px;color:var(--ts);margin-bottom:10px;line-height:1.4;">Compra parcelada que ainda não terminou. O app espalha o resto nas próximas faturas.</div>
+        ${parc}
+        <button class="ob-add-parc" onclick="obAddParc(${i})">+ ${(ct.parcelas||[]).length?'Outra compra parcelada':'Adicionar parcela em andamento'}</button>
+      </div>
     </div>`;
   }).join('');
 }
@@ -1752,7 +1767,48 @@ function saldoCarteira(cartId,limD,limM,limA){
   return saldo;
 }
 
+function renderResumoPainel(){
+  const el=$('resumo-painel');
+  if(!el)return;
+  const m=HJM,a=HJA;
+  const dias=new Date(a,m+1,0).getDate();
+  const dm=S.lancs.filter(l=>l.mes===m+1&&l.ano===a);
+  const fixesMes=fixosDoMes(m,a);
+  const faturasMes=faturasDoMes(m,a);
+  let entrou=0,saiu=0;
+  const porCateg={};
+  const add=(catId,v)=>{const k=catId||'__sem';porCateg[k]=(porCateg[k]||0)+v;};
+  dm.forEach(l=>{l.tipo==='entrada'?entrou+=parseFloat(l.valor):(saiu+=parseFloat(l.valor),add(l.categoria_id,parseFloat(l.valor)));});
+  fixesMes.forEach(f=>{f.tipo==='entrada'?entrou+=parseFloat(f.valor):(saiu+=parseFloat(f.valor),add(f.categoria_id,parseFloat(f.valor)));});
+  faturasMes.forEach(fat=>{if(!fat.paga){saiu+=parseFloat(fat.valor);add('__fatura',parseFloat(fat.valor));}});
+  const sobrou=entrou-saiu;
+  let h=`<div style="font-size:13px;font-weight:700;color:var(--ts);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Resumo de ${MESES[m]}</div>`;
+  h+=`<div class="resumo" style="margin-top:0;">
+    <div class="resumo-linha"><span class="resumo-lbl">Entrou</span><span class="resumo-val pos">+R$ ${brl(entrou)}</span></div>
+    <div class="resumo-linha"><span class="resumo-lbl">Saiu</span><span class="resumo-val neg">-R$ ${brl(saiu)}</span></div>
+    <div class="resumo-linha resumo-sobra"><span class="resumo-lbl">${sobrou<0?'Faltou':'Sobrou'}</span><span class="resumo-val ${sobrou<0?'neg':'pos'}">${sobrou<0?'-':''}R$ ${brl(Math.abs(sobrou))}</span></div>`;
+  const cats=Object.entries(porCateg).sort((x,y)=>y[1]-x[1]);
+  if(cats.length){
+    h+=`<div class="resumo-sub">Pra onde foi</div>`;
+    cats.forEach(([k,v])=>{
+      let nome;
+      if(k==='__sem')nome='<span style="color:var(--ts)">Sem categoria</span>';
+      else if(k==='__fatura')nome='💳 Faturas de cartão';
+      else nome=nomeCateg(k)||'<span style="color:var(--ts)">Sem categoria</span>';
+      const pct=saiu>0?Math.round(v/saiu*100):0;
+      h+=`<div class="resumo-cat">
+        <div class="resumo-cat-top"><span>${nome}</span><span class="resumo-val neg">R$ ${brl(v)}</span></div>
+        <div class="resumo-bar"><div class="resumo-bar-fill" style="width:${pct}%"></div></div>
+      </div>`;
+    });
+  }
+  h+=`</div>`;
+  h+=`<div style="font-size:13px;font-weight:700;color:var(--ts);text-transform:uppercase;letter-spacing:.06em;margin:20px 0 10px;">Meus bancos</div>`;
+  el.innerHTML=h;
+}
+
 function renderCarteiras(){
+  renderResumoPainel();
   const lista=$('lista-carteiras');
   if(!lista)return;
   const ultimoDia=new Date(HJA,HJM+1,0).getDate();
@@ -1760,8 +1816,8 @@ function renderCarteiras(){
   const totalFim=S.carteiras.reduce((s,c)=>s+saldoCarteira(c.id,ultimoDia,HJM,HJA),0);
   let h=`<div class="cart-hero">
     <div class="cart-hero-lbl">Tudo somado, você tem hoje</div>
-    <div class="cart-hero-val" style="color:${totalHoje<0?'var(--r)':'var(--tit)'}">${totalHoje<0?'- ':''}R$ ${Number(Math.abs(totalHoje)).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
-    <div class="cart-hero-fim">Previsão fim do mês: <strong style="color:${totalFim<0?'var(--r)':'var(--v)'}">${totalFim<0?'-':''}R$ ${Number(Math.abs(totalFim)).toLocaleString('pt-BR',{minimumFractionDigits:2})}</strong></div>
+    <div class="cart-hero-val" style="color:#fff">${totalHoje<0?'- ':''}R$ ${Number(Math.abs(totalHoje)).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+    <div class="cart-hero-fim">Previsão fim do mês: <strong>${totalFim<0?'-':''}R$ ${Number(Math.abs(totalFim)).toLocaleString('pt-BR',{minimumFractionDigits:2})}</strong></div>
   </div>`;
   h+=S.carteiras.map(cart=>{
     const hoje=saldoCarteira(cart.id);
