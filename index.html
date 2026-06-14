@@ -969,6 +969,9 @@ function obDelCartao(i){S.obCartoes.splice(i,1);obRenderCartoes();}
 function obAddParc(i){S.obCartoes[i].parcelas.push({desc:'',valor:'',faltam:''});obRenderCartoes();}
 function obDelParc(i,j){S.obCartoes[i].parcelas.splice(j,1);obRenderCartoes();}
 async function obFinCartoes(){
+  // Cartão visível mas totalmente vazio (sem nome e sem vencimento)
+  const cartVazio=S.obCartoes.find(ct=>!ct.nome.trim()&&!ct.venc&&!(ct.parcelas||[]).length);
+  if(cartVazio)return dlgInfo('Cartão em branco','Preencha o cartão que você abriu (nome e dia de vencimento) ou remova ele no ×. Para seguir sem cartão, use "Pular por enquanto".');
   // Cartão começado mas sem nome ou vencimento
   const cartIncompleto=S.obCartoes.find(ct=>(ct.nome.trim()||ct.venc||(ct.parcelas||[]).length)&&!(ct.nome.trim()&&parseInt(ct.venc)));
   if(cartIncompleto)return dlgInfo('Cartão incompleto','Cada cartão precisa de nome e dia de vencimento — ou remova o que estiver vazio. Para seguir sem cartão, use "Pular".');
