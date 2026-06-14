@@ -312,6 +312,12 @@ body,.hdr,.bottom-nav,.rodape,.sheet,.tl-itens,.auth-box,.content>div{transition
 .resumo-bar{height:6px;background:var(--bg);border-radius:3px;overflow:hidden;}
 .resumo-bar-fill{height:100%;background:linear-gradient(90deg,#ffb447,#ff7d6e);border-radius:3px;transition:width .5s cubic-bezier(.32,.72,.35,1);}
 
+.resumo-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.resumo-head-tit{font-size:14px;font-weight:800;color:var(--tit);letter-spacing:-.01em;}
+.resumo-head-tag{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--v);background:var(--vg);padding:3px 9px;border-radius:999px;}
+.resumo-hint{text-align:center;font-size:12.5px;color:var(--ts);margin:10px 0 4px;padding:10px;cursor:pointer;}
+.resumo-hint span{color:var(--v);font-weight:700;}
+.resumo-hint:active{opacity:.6;}
 /* CARTEIRAS premium */
 .cart-hero{background:linear-gradient(140deg,#2bd47e 0%,#11a85f 72%);border-radius:24px;padding:22px;margin-bottom:18px;box-shadow:0 16px 40px -12px rgba(45,212,126,.5);position:relative;overflow:hidden;}
 .cart-hero::after{content:"";position:absolute;bottom:-55%;left:-18%;width:230px;height:230px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.22),transparent 70%);pointer-events:none;}
@@ -2155,10 +2161,12 @@ function renderCarteiras(){
     else addCat(c.categoria_id,v);
   });
   const sobrou=entrou-saiu;
+  const tituloPrev=isCur?'Como seu mês vai terminar':`Como ${MESES[m]} vai terminar`;
   h+=`<div class="resumo" style="margin-top:20px;">
-    <div class="resumo-linha"><span class="resumo-lbl">Entrou</span><span class="resumo-val pos">+R$ ${brl(entrou)}</span></div>
-    <div class="resumo-linha"><span class="resumo-lbl">Saiu</span><span class="resumo-val neg">-R$ ${brl(saiu)}</span></div>
-    <div class="resumo-linha resumo-sobra"><span class="resumo-lbl">${sobrou<0?'Faltou':'Sobrou'}</span><span class="resumo-val ${sobrou<0?'neg':'pos'}">${sobrou<0?'-':''}R$ ${brl(Math.abs(sobrou))}</span></div>`;
+    <div class="resumo-head"><span class="resumo-head-tit">${tituloPrev}</span><span class="resumo-head-tag">previsão</span></div>
+    <div class="resumo-linha"><span class="resumo-lbl">Vai entrar</span><span class="resumo-val pos">+R$ ${brl(entrou)}</span></div>
+    <div class="resumo-linha"><span class="resumo-lbl">Vai sair</span><span class="resumo-val neg">-R$ ${brl(saiu)}</span></div>
+    <div class="resumo-linha resumo-sobra"><span class="resumo-lbl">${sobrou<0?'Vai faltar':'Vai sobrar'}</span><span class="resumo-val ${sobrou<0?'neg':'pos'}">${sobrou<0?'-':''}R$ ${brl(Math.abs(sobrou))}</span></div>`;
   const cats=Object.entries(porCateg).sort((x,y)=>y[1]-x[1]);
   if(cats.length){
     h+=`<div class="resumo-sub">Pra onde foi</div>`;
@@ -2172,6 +2180,7 @@ function renderCarteiras(){
     });
   }
   h+=`</div>`;
+  h+=`<div class="resumo-hint" onclick="abaApp('mes')">Quer ver gasto por gasto? <span>Abrir o Mês ›</span></div>`;
 
   // ── MEUS BANCOS ──
   h+=`<div class="sec-tit" style="margin-top:20px;">Meus bancos</div>`;
