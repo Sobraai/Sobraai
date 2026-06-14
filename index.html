@@ -844,6 +844,9 @@ function obRenderRendas(){
 function obAddRenda(){S.obRendas.push({desc:'',valor:'',dia:'',banco:'',categ:''});obRenderRendas();}
 function obDelRenda(i){S.obRendas.splice(i,1);obRenderRendas();}
 async function obFinRendas(){
+  // Bloqueia avançar se alguma renda foi começada mas está incompleta
+  const incompleta=S.obRendas.find(r=>(r.desc.trim()||r.valor||r.dia)&&!(r.desc.trim()&&parseFloat(r.valor)&&parseInt(r.dia)));
+  if(incompleta)return dlgInfo('Renda incompleta','Preencha nome, valor e dia de cada renda — ou apague a que estiver vazia. Se não tem renda fixa, use "Pular".');
   const validas=S.obRendas.filter(r=>r.desc.trim()&&parseFloat(r.valor)&&parseInt(r.dia));
   for(const r of validas){
     if(r._id)continue;
@@ -851,11 +854,22 @@ async function obFinRendas(){
     await db.from('fixos').insert({
       user_id:S.user.id,descricao:r.desc.trim(),valor:parseFloat(r.valor),tipo:'entrada',
       dia:parseInt(r.dia),carteira_id:r.banco||null,parcelas:null,categoria_id:catId,
-      mes_inicio:HJM+1,ano_inicio:HJA,ativo:true,
+      mes_inicio:inicioFixoMes(parseInt(r.dia),HJM,HJA).mes,ano_inicio:inicioFixoMes(parseInt(r.dia),HJM,HJA).ano,ativo:true,
     });
     r._id=true;
   }
   await carrega();obStep(3);
+}
+
+// Regra (a): fixo cujo dia de vencimento já passou no mês de criação começa só no próximo mês
+function inicioFixoMes(dia,baseMes,baseAno){
+  // baseMes 0-based. Retorna {mes (1-based), ano}
+  let m=baseMes,a=baseAno;
+  const ehMesAtual=(baseMes===HJM&&baseAno===HJA);
+  if(ehMesAtual&&dia<HJD){ // dia já passou neste mês
+    m++;if(m>11){m=0;a++;}
+  }
+  return {mes:m+1,ano:a};
 }
 
 // PASSO 3 — múltiplas contas, cada uma com banco e categoria
@@ -881,6 +895,8 @@ function obRenderContas(){
 function obAddConta(){S.obContas.push({nome:'',valor:'',dia:'',banco:'',categ:''});obRenderContas();}
 function obDelConta(i){S.obContas.splice(i,1);obRenderContas();}
 async function obFinContas(){
+  const incompleta=S.obContas.find(ct=>(ct.nome.trim()||ct.valor||ct.dia)&&!(ct.nome.trim()&&parseFloat(ct.valor)&&parseInt(ct.dia)));
+  if(incompleta)return dlgInfo('Conta incompleta','Preencha nome, valor e dia de cada conta — ou apague a que estiver vazia. Para seguir sem contas, use "Pular".');
   const validas=S.obContas.filter(ct=>ct.nome.trim()&&parseFloat(ct.valor)&&parseInt(ct.dia));
   for(const ct of validas){
     if(ct._id)continue;
@@ -888,7 +904,7 @@ async function obFinContas(){
     await db.from('fixos').insert({
       user_id:S.user.id,descricao:ct.nome.trim(),valor:parseFloat(ct.valor),tipo:'saida',
       dia:parseInt(ct.dia),carteira_id:ct.banco||null,parcelas:null,categoria_id:catId,
-      mes_inicio:HJM+1,ano_inicio:HJA,ativo:true,
+      mes_inicio:inicioFixoMes(parseInt(ct.dia),HJM,HJA).mes,ano_inicio:inicioFixoMes(parseInt(ct.dia),HJM,HJA).ano,ativo:true,
     });
     ct._id=true;
   }
@@ -953,23 +969,36 @@ function obDelCartao(i){S.obCartoes.splice(i,1);obRenderCartoes();}
 function obAddParc(i){S.obCartoes[i].parcelas.push({desc:'',valor:'',faltam:''});obRenderCartoes();}
 function obDelParc(i,j){S.obCartoes[i].parcelas.splice(j,1);obRenderCartoes();}
 async function obFinCartoes(){
+  // Cartão começado mas sem nome ou vencimento
+  const cartIncompleto=S.obCartoes.find(ct=>(ct.nome.trim()||ct.venc||(ct.parcelas||[]).length)&&!(ct.nome.trim()&&parseInt(ct.venc)));
+  if(cartIncompleto)return dlgInfo('Cartão incompleto','Cada cartão precisa de nome e dia de vencimento — ou remova o que estiver vazio. Para seguir sem cartão, use "Pular".');
+  // Parcela começada mas incompleta
+  for(const ct of S.obCartoes){
+    const pInc=(ct.parcelas||[]).find(p=>(p.desc.trim()||p.valor||p.faltam)&&!(p.desc.trim()&&parseFloat(p.valor)&&parseInt(p.faltam)));
+    if(pInc)return dlgInfo('Parcela incompleta','Preencha o que comprou, o valor e quantas faltam — ou remova a parcela vazia.');
+  }
   const validos=S.obCartoes.filter(ct=>ct.nome.trim()&&parseInt(ct.venc));
   for(const ct of validos){
+    if(ct._id)continue; // evita duplicar cartão se voltar e avançar
     const{data}=await db.from('cartoes').insert({
       user_id:S.user.id,nome:ct.nome.trim(),emoji:'💳',
       dia_vencimento:parseInt(ct.venc),carteira_id:ct.banco||null,
     }).select();
     const cartaoId=data&&data[0]?data[0].id:null;
     if(!cartaoId)continue;
-    // Espalhar parcelas que já correm, a partir do mês atual
+    ct._id=cartaoId;
+    // Espalhar parcelas que já correm. Regra (a): se o vencimento já passou neste mês, começa no próximo.
+    const venc=parseInt(ct.venc);
+    let m0=HJM,a0=HJA;
+    if(venc<HJD){m0++;if(m0>11){m0=0;a0++;}}
     for(const p of (ct.parcelas||[])){
       const v=parseFloat(p.valor),faltam=parseInt(p.faltam);
       if(!v||!faltam)continue;
-      let m=HJM,a=HJA;
+      let m=m0,a=a0;
       for(let k=0;k<faltam;k++){
         await db.from('compras_cartao').insert({
           user_id:S.user.id,cartao_id:cartaoId,descricao:p.desc.trim()||'Parcela',
-          valor:v,dia:parseInt(ct.venc),mes_fatura:m+1,ano_fatura:a,
+          valor:v,dia:venc,mes_fatura:m+1,ano_fatura:a,
           parcelas:faltam,parcela_atual:k+1,categoria_id:null,
         });
         m++;if(m>11){m=0;a++;}
@@ -1235,50 +1264,6 @@ function render(){
 
     h+=`</div></div></div>`;
   }
-  // ── RESUMO DO MÊS (estilo planilha, por categoria) ──
-  let entrouTot=0,saiuTot=0;
-  const porCateg={};
-  const addCateg=(catId,valor)=>{
-    const k=catId||'__sem';
-    porCateg[k]=(porCateg[k]||0)+valor;
-  };
-  dm.forEach(l=>{
-    if(l.tipo==='entrada')entrouTot+=parseFloat(l.valor);
-    else{saiuTot+=parseFloat(l.valor);addCateg(l.categoria_id,parseFloat(l.valor));}
-  });
-  fixesMes.forEach(f=>{
-    if(f.tipo==='entrada')entrouTot+=parseFloat(f.valor);
-    else{saiuTot+=parseFloat(f.valor);addCateg(f.categoria_id,parseFloat(f.valor));}
-  });
-  faturasMes.forEach(fat=>{
-    if(fat.paga)return;
-    saiuTot+=parseFloat(fat.valor);
-    addCateg('__fatura',parseFloat(fat.valor));
-  });
-  const sobrou=entrouTot-saiuTot;
-  if(entrouTot>0||saiuTot>0){
-    h+=`<div class="resumo">
-      <div class="resumo-tit">Resumo de ${MESES[m]}</div>
-      <div class="resumo-linha"><span class="resumo-lbl">Entrou</span><span class="resumo-val pos">+R$ ${brl(entrouTot)}</span></div>
-      <div class="resumo-linha"><span class="resumo-lbl">Saiu</span><span class="resumo-val neg">-R$ ${brl(saiuTot)}</span></div>
-      <div class="resumo-linha resumo-sobra"><span class="resumo-lbl">${sobrou<0?'Faltou':'Sobrou'}</span><span class="resumo-val ${sobrou<0?'neg':'pos'}">${sobrou<0?'-':''}R$ ${brl(Math.abs(sobrou))}</span></div>`;
-    const cats=Object.entries(porCateg).sort((a,b)=>b[1]-a[1]);
-    if(cats.length){
-      h+=`<div class="resumo-sub">Pra onde foi</div>`;
-      cats.forEach(([k,v])=>{
-        let nome;
-        if(k==='__sem')nome='<span style="color:var(--ts)">Sem categoria</span>';
-        else if(k==='__fatura')nome='💳 Faturas de cartão';
-        else nome=nomeCateg(k)||'<span style="color:var(--ts)">Sem categoria</span>';
-        const pct=saiuTot>0?Math.round(v/saiuTot*100):0;
-        h+=`<div class="resumo-cat">
-          <div class="resumo-cat-top"><span>${nome}</span><span class="resumo-val neg">R$ ${brl(v)}</span></div>
-          <div class="resumo-bar"><div class="resumo-bar-fill" style="width:${pct}%"></div></div>
-        </div>`;
-      });
-    }
-    h+=`</div>`;
-  }
   if(!h)h=`<div style="text-align:center;padding:40px 16px;color:var(--ts);font-size:14px;">Nenhum lançamento neste mês.<br>Toque em <strong>+</strong> para começar.</div>`;
   $('content').innerHTML=h;
   // Expandir hoje automaticamente
@@ -1491,10 +1476,11 @@ async function salvaFixoEscopo(escopo){
   const parcelas=S.fixoRep==='parcelado'?parseInt($('f-parcelas').value)||null:null;
   if(S.fixoRep==='parcelado'&&!parcelas)return dlgInfo('Faltou algo','Informe o número de parcelas.');
   if(!S.fixoEditId){
+    const ini=inicioFixoMes(dia,S.mes,S.ano);
     await db.from('fixos').insert({
       user_id:S.user.id,descricao:desc,valor:val,tipo:S.fixoTipo,
       dia,carteira_id:cartId,parcelas,categoria_id:categId,
-      mes_inicio:S.mes+1,ano_inicio:S.ano,ativo:true,
+      mes_inicio:ini.mes,ano_inicio:ini.ano,ativo:true,
     });
   } else if(escopo==='todos'){
     await db.from('fixos').update({descricao:desc,valor:val,carteira_id:cartId,dia,categoria_id:categId}).eq('id',S.fixoEditId);
