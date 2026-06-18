@@ -474,6 +474,17 @@ body.claro{background:radial-gradient(140% 60% at 50% -10%, rgba(22,163,74,.07) 
 .conta-btn{flex-shrink:0;padding:8px 14px;border-radius:9px;background:var(--v);color:var(--onv);font-size:12.5px;font-weight:700;transition:transform .12s ease;}
 .conta-btn:active{transform:scale(.94);}
 .conta-check{width:26px;height:26px;border-radius:50%;background:var(--v);color:var(--onv);font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+
+/* ═══ v4.0: tipo de compra, emoji picker ═══ */
+.seg-tipo{display:flex;gap:6px;background:var(--bg3);border-radius:12px;padding:5px;margin-bottom:4px;}
+.seg-tipo button{flex:1;border:none;background:transparent;color:var(--ts);font-family:inherit;font-size:12.5px;font-weight:700;padding:9px 4px;border-radius:9px;cursor:pointer;transition:.15s;}
+.seg-tipo button.on{background:var(--v);color:var(--onv);}
+.seg-tipo button:active{transform:scale(.96);}
+.sh-hint-tipo{font-size:11px;color:var(--ts);line-height:1.4;margin:6px 0 2px;}
+.emoji-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px;}
+.emoji-pick{border:1px solid var(--bd);background:var(--bg3);border-radius:10px;padding:7px 0;font-size:18px;cursor:pointer;transition:.12s;}
+.emoji-pick.on{border-color:var(--v);background:var(--vg);transform:scale(1.06);}
+.emoji-pick:active{transform:scale(.9);}
 </style>
 </head>
 <body>
@@ -994,10 +1005,10 @@ function obOptsCateg(sel,tipo){
   return h;
 }
 // Cria categoria por texto digitado no onboarding (campo livre) e devolve o id
-async function obCriaCategoria(nome,tipo){
+async function obCriaCategoria(nome,tipo,emoji){
   const ex=S.categorias.find(x=>x.nome.toLowerCase()===nome.trim().toLowerCase()&&(x.tipo||'saida')===(tipo||'saida'));
   if(ex)return ex.id;
-  const{data}=await db.from('categorias').insert({user_id:S.user.id,nome:nome.trim(),emoji:'🏷️',tipo:tipo||'saida'}).select();
+  const{data}=await db.from('categorias').insert({user_id:S.user.id,nome:nome.trim(),emoji:emoji||'🏷️',tipo:tipo||'saida'}).select();
   if(data&&data[0]){S.categorias.push(data[0]);return data[0].id;}
   return null;
 }
@@ -1117,11 +1128,9 @@ async function obFinContas(){
 async function obSelCateg(selEl,lista,i,tipo){
   tipo=tipo||'saida';
   if(selEl.value==='__nova'){
-    const r=await dlgForm('Nova categoria de '+(tipo==='entrada'?'entrada':'saída'),[
-      {id:'nome',label:'Nome',type:'text',placeholder:'Ex: Moradia, Mercado'},
-    ]);
-    if(!r||r==='__DELETE'||!r.nome||!r.nome.trim()){selEl.value=S[lista][i].categ||'';return;}
-    const id=await obCriaCategoria(r.nome,tipo);
+    const r=await dlgNovaCategoria(tipo);
+    if(!r||!r.nome){selEl.value=S[lista][i].categ||'';return;}
+    const id=await obCriaCategoria(r.nome,tipo,r.emoji);
     S[lista][i].categ=id||'';
     if(lista==='obRendas')obRenderRendas();else if(lista==='obContas')obRenderContas();else obRenderCartoes();
   } else {
@@ -1136,16 +1145,24 @@ function obRenderCartoes(){
   if(!S.obCartoes.length){$('ob-cartoes').innerHTML='<div style="font-size:12px;color:var(--ts);text-align:center;padding:10px 0;">Nenhum cartão ainda. Se você tem cartão de crédito, adicione abaixo.</div>';return;}
   $('ob-cartoes').innerHTML=S.obCartoes.map((ct,i)=>{
     if(!ct.banco)ct.banco=b0;
-    const parc=(ct.parcelas||[]).map((p,j)=>`
+    const parc=(ct.parcelas||[]).map((p,j)=>{
+      const tp=p.tipo||'parcela';
+      return `
       <div class="ob-parc-card">
-        <div class="ob-mini-lbl">O que você comprou</div>
-        <input class="sh-inp" type="text" placeholder="Ex: Geladeira" value="${p.desc||''}" oninput="S.obCartoes[${i}].parcelas[${j}].desc=this.value" style="margin-bottom:10px;"/>
+        <div class="seg-tipo" style="margin-bottom:10px;">
+          <button type="button" class="${tp==='parcela'?'on':''}" onclick="obSetTipoParc(${i},${j},'parcela')">Parcelada</button>
+          <button type="button" class="${tp==='assinatura'?'on':''}" onclick="obSetTipoParc(${i},${j},'assinatura')">Assinatura</button>
+        </div>
+        <div class="ob-mini-lbl">${tp==='assinatura'?'Nome da assinatura':'O que você comprou'}</div>
+        <input class="sh-inp" type="text" placeholder="${tp==='assinatura'?'Ex: Deezer, Netflix':'Ex: Geladeira'}" value="${p.desc||''}" oninput="S.obCartoes[${i}].parcelas[${j}].desc=this.value" style="margin-bottom:10px;"/>
         <div class="ob-parc-duo">
-          <div style="flex:1;"><div class="ob-mini-lbl">Valor da parcela</div><input class="sh-inp" type="number" placeholder="R$" inputmode="decimal" value="${p.valor}" oninput="S.obCartoes[${i}].parcelas[${j}].valor=this.value"/></div>
-          <div style="flex:1;"><div class="ob-mini-lbl">Quantas ainda faltam</div><input class="sh-inp" type="number" placeholder="Ex: 8 (próximos meses)" min="1" inputmode="numeric" value="${p.faltam}" oninput="S.obCartoes[${i}].parcelas[${j}].faltam=this.value"/></div>
+          <div style="flex:1;"><div class="ob-mini-lbl">${tp==='assinatura'?'Valor por mês':'Valor da parcela'}</div><input class="sh-inp" type="number" placeholder="R$" inputmode="decimal" value="${p.valor}" oninput="S.obCartoes[${i}].parcelas[${j}].valor=this.value"/></div>
+          ${tp==='parcela'?`<div style="flex:1;"><div class="ob-mini-lbl">Quantas ainda faltam</div><input class="sh-inp" type="number" placeholder="Ex: 8" min="1" inputmode="numeric" value="${p.faltam}" oninput="S.obCartoes[${i}].parcelas[${j}].faltam=this.value"/></div>`:''}
           <button class="ob-parc-del" onclick="obDelParc(${i},${j})">×</button>
         </div>
-      </div>`).join('');
+        <div class="ob-mini-lbl" style="margin-top:10px;">Categoria</div>
+        <select class="sh-sel" onchange="obSelCategParc(this,${i},${j})">${obOptsCateg(p.categ,'saida')}</select>
+      </div>`;}).join('');
     return `<div class="ob-item">
       <div class="ob-item-head">
         <span style="font-size:14px;font-weight:700;color:var(--tit);">💳 Cartão</span>
@@ -1161,17 +1178,26 @@ function obRenderCartoes(){
       <div class="ob-money" style="margin-bottom:2px;"><span class="ob-money-rs">R$</span><input type="number" placeholder="0,00" inputmode="decimal" value="${ct.faturaAtual||''}" oninput="S.obCartoes[${i}].faturaAtual=this.value"/></div>
       <div style="font-size:10.5px;color:var(--ts);margin:4px 0 0;line-height:1.4;">É o total que cai na fatura agora (mercado, farmácia, etc). Compras parceladas que ainda vão vir nos próximos meses você adiciona embaixo.</div>
       <div class="ob-parc-bloco">
-        <div style="font-size:12px;font-weight:700;color:var(--tit);margin-bottom:2px;">Compras parceladas em andamento</div>
-        <div style="font-size:11px;color:var(--ts);margin-bottom:10px;line-height:1.4;">Parcelas que ainda vão pesar nas <b>próximas</b> faturas. O app soma elas além do valor de cima, mês a mês.</div>
+        <div style="font-size:12px;font-weight:700;color:var(--tit);margin-bottom:2px;">Parcelas e assinaturas do cartão</div>
+        <div style="font-size:11px;color:var(--ts);margin-bottom:10px;line-height:1.4;">Compras parceladas em andamento ou assinaturas mensais (Deezer, Netflix). O app soma nas <b>próximas</b> faturas, além do valor de cima.</div>
         ${parc}
-        <button class="ob-add-parc" onclick="obAddParc(${i})">+ ${(ct.parcelas||[]).length?'Outra compra parcelada':'Adicionar parcela em andamento'}</button>
+        <button class="ob-add-parc" onclick="obAddParc(${i})">+ ${(ct.parcelas||[]).length?'Adicionar outra':'Adicionar parcela ou assinatura'}</button>
       </div>
     </div>`;
   }).join('');
 }
 function obAddCartao(){S.obCartoes.push({nome:'',venc:'',banco:'',faturaAtual:'',parcelas:[]});obRenderCartoes();}
 function obDelCartao(i){S.obCartoes.splice(i,1);obRenderCartoes();}
-function obAddParc(i){S.obCartoes[i].parcelas.push({desc:'',valor:'',faltam:''});obRenderCartoes();}
+function obAddParc(i){S.obCartoes[i].parcelas.push({desc:'',valor:'',faltam:'',tipo:'parcela',categ:''});obRenderCartoes();}
+function obSetTipoParc(i,j,t){S.obCartoes[i].parcelas[j].tipo=t;obRenderCartoes();}
+async function obSelCategParc(selEl,i,j){
+  if(selEl.value==='__nova'){
+    const r=await dlgNovaCategoria('saida');
+    if(!r||!r.nome){selEl.value=S.obCartoes[i].parcelas[j].categ||'';return;}
+    const id=await obCriaCategoria(r.nome,'saida',r.emoji);
+    S.obCartoes[i].parcelas[j].categ=id||'';obRenderCartoes();
+  } else { S.obCartoes[i].parcelas[j].categ=selEl.value; }
+}
 function obDelParc(i,j){S.obCartoes[i].parcelas.splice(j,1);obRenderCartoes();}
 async function obFinCartoes(){
   // Cartão visível mas totalmente vazio (sem nome e sem vencimento)
@@ -1180,10 +1206,15 @@ async function obFinCartoes(){
   // Cartão começado mas sem nome ou vencimento
   const cartIncompleto=S.obCartoes.find(ct=>(ct.nome.trim()||ct.venc||(ct.parcelas||[]).length)&&!(ct.nome.trim()&&parseInt(ct.venc)));
   if(cartIncompleto)return dlgInfo('Cartão incompleto','Cada cartão precisa de nome e dia de vencimento — ou remova o que estiver vazio. Para seguir sem cartão, use "Pular".');
-  // Parcela começada mas incompleta
+  // Parcela/assinatura começada mas incompleta
   for(const ct of S.obCartoes){
-    const pInc=(ct.parcelas||[]).find(p=>(p.desc.trim()||p.valor||p.faltam)&&!(p.desc.trim()&&parseFloat(p.valor)&&parseInt(p.faltam)));
-    if(pInc)return dlgInfo('Parcela incompleta','Preencha o que comprou, o valor e quantas faltam — ou remova a parcela vazia.');
+    const pInc=(ct.parcelas||[]).find(p=>{
+      const started=p.desc.trim()||p.valor||p.faltam;
+      if(!started)return false;
+      if((p.tipo||'parcela')==='assinatura')return !(p.desc.trim()&&parseFloat(p.valor));
+      return !(p.desc.trim()&&parseFloat(p.valor)&&parseInt(p.faltam));
+    });
+    if(pInc)return dlgInfo('Item incompleto','Preencha o nome e o valor (e, se for parcela, quantas faltam) — ou remova o item vazio.');
   }
   const validos=S.obCartoes.filter(ct=>ct.nome.trim()&&parseInt(ct.venc));
   for(const ct of validos){
@@ -1210,14 +1241,26 @@ async function obFinCartoes(){
     // Parcelas que já correm são FUTURAS: começam na próxima fatura (depois da atual).
     let mp=m0+1,ap=a0;if(mp>11){mp=0;ap++;}
     for(const p of (ct.parcelas||[])){
-      const v=parseFloat(p.valor),faltam=parseInt(p.faltam);
-      if(!v||!faltam)continue;
+      const v=parseFloat(p.valor);
+      if(!v)continue;
+      const pcat=p.categ||null;
+      if((p.tipo||'parcela')==='assinatura'){
+        // Assinatura: 1 linha recorrente a partir da próxima fatura
+        await db.from('compras_cartao').insert({
+          user_id:S.user.id,cartao_id:cartaoId,descricao:p.desc.trim()||'Assinatura',
+          valor:v,dia:venc,mes_fatura:mp+1,ano_fatura:ap,
+          parcelas:1,parcela_atual:1,categoria_id:pcat,recorrente:true,
+        });
+        continue;
+      }
+      const faltam=parseInt(p.faltam);
+      if(!faltam)continue;
       let m=mp,a=ap;
       for(let k=0;k<faltam;k++){
         await db.from('compras_cartao').insert({
           user_id:S.user.id,cartao_id:cartaoId,descricao:p.desc.trim()||'Parcela',
           valor:v,dia:venc,mes_fatura:m+1,ano_fatura:a,
-          parcelas:faltam,parcela_atual:k+1,categoria_id:null,
+          parcelas:faltam,parcela_atual:k+1,categoria_id:pcat,recorrente:false,
         });
         m++;if(m>11){m=0;a++;}
       }
@@ -1297,11 +1340,19 @@ function faturaPaga(cartaoId,mes,ano){
   const e=faturaEdit(cartaoId,mes,ano);
   return !!(e&&e.pago);
 }
+// Compras de uma fatura: avulsas/parceladas do mês + assinaturas (recorrentes) cujo início já passou
+function comprasDaFatura(cartaoId,mes,ano){
+  const ord=ano*100+mes;
+  return S.compras.filter(c=>{
+    if(c.cartao_id!==cartaoId)return false;
+    if(c.recorrente){const ini=c.ano_fatura*100+c.mes_fatura;return ini<=ord;}
+    return c.mes_fatura===mes&&c.ano_fatura===ano;
+  });
+}
 function valorFatura(cartaoId,mes,ano){
   const edit=faturaEdit(cartaoId,mes,ano);
   if(edit)return parseFloat(edit.valor);
-  const comprasFat=S.compras.filter(c=>c.cartao_id===cartaoId&&c.mes_fatura===mes&&c.ano_fatura===ano);
-  return comprasFat.reduce((s,c)=>s+parseFloat(c.valor),0);
+  return comprasDaFatura(cartaoId,mes,ano).reduce((s,c)=>s+parseFloat(c.valor),0);
 }
 // Faturas que vencem num determinado mês/ano (uma por cartão que tenha valor > 0)
 function faturasDoMes(m,a){
@@ -1926,16 +1977,37 @@ function popularCategSel(selectId,selId,tipo){
 async function categChange(sel){
   if(sel.value!=='__nova')return;
   const tipo=sel.dataset.tipo||'saida';
-  const r=await dlgForm('Nova categoria de '+(tipo==='entrada'?'entrada':'saída'),[
-    {id:'nome',label:'Nome',type:'text',placeholder:'Ex: Mercado, Farmácia, Lazer'},
-    {id:'emoji',label:'Emoji',type:'text',value:'🏷️'},
-  ]);
-  if(!r||r==='__DELETE'||!r.nome||!r.nome.trim()){sel.value='';return;}
+  const r=await dlgNovaCategoria(tipo);
+  if(!r||!r.nome){sel.value='';return;}
   const{data,error}=await db.from('categorias').insert({user_id:S.user.id,nome:r.nome.trim(),emoji:r.emoji||'🏷️',tipo}).select();
   if(error){sel.value='';return;}
   await carrega();
   popularCategSel(sel.id,data&&data[0]?data[0].id:null,tipo);
 }
+// Diálogo de nova categoria com seletor de emoji
+const EMOJIS_CATEG=['🏠','🍔','🛒','💊','🚗','⛽','📱','💡','🎮','👕','🎓','🐾','✈️','🎁','🍻','💇','🔧','💳','📺','☕','💰','🏥','📚','🎬','🏋️','🚌','🧾','💸'];
+let _ncResolve=null,_ncEmoji='🏷️';
+function dlgNovaCategoria(tipo){
+  return new Promise(res=>{
+    _ncResolve=res;_ncEmoji='🏷️';
+    const grid=EMOJIS_CATEG.map(e=>`<button type="button" class="emoji-pick" data-e="${e}" onclick="ncSetEmoji('${e}')">${e}</button>`).join('');
+    let h=`<div class="sh-handle"></div><div class="sh-tit">Nova categoria de ${tipo==='entrada'?'entrada':'saída'}</div>
+      <div style="display:flex;align-items:center;gap:12px;margin:14px 0;">
+        <span id="nc-prev" style="font-size:30px;width:54px;height:54px;border-radius:15px;background:var(--bg3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">🏷️</span>
+        <input class="sh-inp" id="nc-nome" type="text" placeholder="Ex: Mercado, Assinatura, Lazer" style="flex:1;margin:0;"/>
+      </div>
+      <div class="sh-lbl">Escolha um ícone</div>
+      <div class="emoji-grid">${grid}</div>
+      <div class="sh-actions">
+        <button class="btn-canc" onclick="ncFecha(null)">Cancelar</button>
+        <button class="btn-salv" onclick="ncColeta()">Criar</button>
+      </div>`;
+    $('dlg-box').innerHTML=h;$('dlg-ov').classList.add('aberto');
+  });
+}
+function ncSetEmoji(e){_ncEmoji=e;$('nc-prev').textContent=e;document.querySelectorAll('.emoji-pick').forEach(b=>b.classList.toggle('on',b.dataset.e===e));}
+function ncFecha(v){$('dlg-ov').classList.remove('aberto');if(_ncResolve){const r=_ncResolve;_ncResolve=null;r(v);}}
+function ncColeta(){const nome=$('nc-nome').value.trim();if(!nome)return;ncFecha({nome,emoji:_ncEmoji});}
 function nomeCateg(id){
   if(!id)return null;
   const ct=S.categorias.find(x=>x.id===id);
@@ -2155,11 +2227,11 @@ function renderCarteiras(){
   dm.forEach(l=>{l.tipo==='entrada'?entrou+=parseFloat(l.valor):(saiu+=parseFloat(l.valor),addCat(l.categoria_id,parseFloat(l.valor)));});
   fixesMes.forEach(f=>{const v=fixoValEff(f);f.tipo==='entrada'?entrou+=v:(saiu+=v,addCat(f.categoria_id,v));});
   // Cartão: quebra por categoria da COMPRA (não a fatura inteira). "Fatura atual" do onboarding = gasto inicial
-  S.compras.filter(c=>c.mes_fatura===m+1&&c.ano_fatura===a).forEach(c=>{
+  S.cartoes.forEach(cart=>comprasDaFatura(cart.id,m+1,a).forEach(c=>{
     const v=parseFloat(c.valor);saiu+=v;
     if(c.descricao==='Fatura atual'&&!c.categoria_id)addCat('__cartao_inicial',v);
     else addCat(c.categoria_id,v);
-  });
+  }));
   const sobrou=entrou-saiu;
   const tituloPrev=isCur?'Como seu mês vai terminar':`Como ${MESES[m]} vai terminar`;
   h+=`<div class="resumo" style="margin-top:20px;">
@@ -2328,7 +2400,7 @@ function renderCartoes(){
       const v=valorFatura(ct.id,cm+1,ca);
       h+=`<div style="background:var(--bg2);border-radius:14px;padding:14px 16px;margin-bottom:8px;border:0.5px solid var(--bd);">
         <div style="display:flex;align-items:center;gap:12px;">
-          <div style="font-size:24px;">${ct.emoji}</div>
+          ${badgeBanco(ct,46)}
           <div style="flex:1;">
             <div style="font-size:14px;font-weight:500;color:var(--tit);">${ct.nome}</div>
             <div style="font-size:11px;color:var(--ts);margin-top:2px;">Vence dia ${ct.dia_vencimento}</div>
@@ -2347,27 +2419,57 @@ function renderCartoes(){
   el.innerHTML=h;
 }
 
+let _ctResolve=null,_ctCor=null,_ctCorLetra=null;
+function dlgCartao(titulo,ct){
+  return new Promise(res=>{
+    _ctResolve=res;
+    _ctCor=ct?corBanco(ct):'#820ad1';
+    _ctCorLetra=ct?corLetraBanco(ct):'#ffffff';
+    const nome=ct?ct.nome:'';const letra=ct?letraBanco(ct):'';
+    const venc=ct?ct.dia_vencimento:10;const cartSel=ct?(ct.carteira_id||''):'';
+    const bgs=CORES_BANCO.map(c=>`<button onclick="ctSetCor('${c}')" data-cor="${c}" class="banco-swatch" style="background:${c};${c===_ctCor?'outline:3px solid var(--tit);outline-offset:2px;':''}"></button>`).join('');
+    const lts=CORES_LETRA.map(c=>`<button onclick="ctSetCorLetra('${c}')" data-cor="${c}" class="banco-swatch" style="background:${c};border:1.5px solid var(--bd);${c===_ctCorLetra?'outline:3px solid var(--tit);outline-offset:2px;':''}"></button>`).join('');
+    const bancoOpts=`<option value="">— Escolho na hora de pagar —</option>`+S.carteiras.map(c=>`<option value="${c.id}"${c.id===cartSel?' selected':''}>${c.nome}</option>`).join('');
+    let h=`<div class="sh-handle"></div><div class="sh-tit">${titulo}</div>
+      <div style="display:flex;align-items:center;gap:12px;margin:14px 0;">
+        <span id="ct-prev">${badgeBanco({nome,letra,cor:_ctCor,cor_letra:_ctCorLetra},54)}</span>
+        <input class="sh-inp" id="ct-nome" type="text" placeholder="Ex: Nubank, Inter" value="${(nome||'').replace(/"/g,'&quot;')}" oninput="ctPrev()" style="flex:1;margin:0;"/>
+      </div>
+      <div class="sh-lbl">Letra do ícone</div>
+      <input class="sh-inp" id="ct-letra" type="text" maxlength="2" value="${(letra||'').replace(/"/g,'&quot;')}" placeholder="Ex: N" oninput="ctPrev()" style="text-align:center;font-weight:800;letter-spacing:2px;"/>
+      <div class="sh-lbl">Cor do fundo</div>
+      <div id="ct-cores" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">${bgs}</div>
+      <div class="sh-lbl">Cor da letra</div>
+      <div id="ct-cores-letra" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">${lts}</div>
+      <div class="sh-lbl">Dia de vencimento da fatura</div>
+      <input class="sh-inp" id="ct-venc" type="number" min="1" max="31" inputmode="numeric" value="${venc}"/>
+      <div class="sh-lbl">Banco que paga a fatura (opcional)</div>
+      <select class="sh-sel" id="ct-cart">${bancoOpts}</select>
+      <div class="sh-actions">
+        <button class="btn-canc" onclick="ctFecha(null)">Cancelar</button>
+        <button class="btn-salv" onclick="ctColeta()">Salvar</button>
+      </div>`;
+    if(ct)h+=`<button class="btn-del" onclick="ctFecha('__DELETE')">Apagar cartão</button>`;
+    $('dlg-box').innerHTML=h;$('dlg-ov').classList.add('aberto');
+  });
+}
+function ctSetCor(c){_ctCor=c;document.querySelectorAll('#ct-cores .banco-swatch').forEach(b=>{b.style.outline=b.dataset.cor===c?'3px solid var(--tit)':'none';b.style.outlineOffset='2px';});ctPrev();}
+function ctSetCorLetra(c){_ctCorLetra=c;document.querySelectorAll('#ct-cores-letra .banco-swatch').forEach(b=>{b.style.outline=b.dataset.cor===c?'3px solid var(--tit)':'none';b.style.outlineOffset='2px';});ctPrev();}
+function ctPrev(){const nome=$('ct-nome').value;const letra=$('ct-letra').value.trim().slice(0,2).toUpperCase();$('ct-prev').innerHTML=badgeBanco({nome,letra,cor:_ctCor,cor_letra:_ctCorLetra},54);}
+function ctFecha(v){$('dlg-ov').classList.remove('aberto');if(_ctResolve){const r=_ctResolve;_ctResolve=null;r(v);}}
+function ctColeta(){const nome=$('ct-nome').value.trim();if(!nome)return;const ld=$('ct-letra').value.trim().slice(0,2).toUpperCase();const letra=(ld&&ld!==inicialBanco(nome))?ld:null;ctFecha({nome,letra,cor:_ctCor,cor_letra:_ctCorLetra,venc:parseInt($('ct-venc').value)||10,cart:$('ct-cart').value});}
+
 async function novoCartao(){
-  const r=await dlgForm('Novo cartão',[
-    {id:'nome',label:'Nome do cartão',type:'text',placeholder:'Ex: Nubank, Inter'},
-    {id:'emoji',label:'Emoji',type:'text',value:'💳'},
-    {id:'venc',label:'Dia de vencimento da fatura',type:'number',value:10},
-    {id:'cart',label:'Banco da fatura (opcional)',type:'select',value:'',options:[{v:'',t:'— Escolho na hora de pagar —'},...S.carteiras.map(c=>({v:c.id,t:`${c.emoji} ${c.nome}`}))]},
-  ]);
-  if(!r||r==='__DELETE'||!r.nome||!r.nome.trim())return;
-  await db.from('cartoes').insert({user_id:S.user.id,nome:r.nome.trim(),emoji:r.emoji||'💳',dia_vencimento:parseInt(r.venc)||10,carteira_id:r.cart||null});
+  const r=await dlgCartao('Novo cartão',null);
+  if(!r||r==='__DELETE'||!r.nome)return;
+  await db.from('cartoes').insert({user_id:S.user.id,nome:r.nome,emoji:'💳',cor:r.cor,cor_letra:r.cor_letra,letra:r.letra,dia_vencimento:r.venc,carteira_id:r.cart||null});
   await carrega();renderCartoes();render();toast('✓ Cartão criado');
 }
 
 async function editarCartao(id){
   const ct=S.cartoes.find(c=>c.id===id);
   if(!ct)return;
-  const r=await dlgForm('Editar cartão',[
-    {id:'nome',label:'Nome',type:'text',value:ct.nome},
-    {id:'emoji',label:'Emoji',type:'text',value:ct.emoji},
-    {id:'venc',label:'Dia de vencimento',type:'number',value:ct.dia_vencimento},
-    {id:'cart',label:'Banco da fatura (opcional)',type:'select',value:ct.carteira_id||'',options:[{v:'',t:'— Escolho na hora de pagar —'},...S.carteiras.map(c=>({v:c.id,t:`${c.emoji} ${c.nome}`}))]},
-  ],{delTxt:'Apagar cartão'});
+  const r=await dlgCartao('Editar cartão',ct);
   if(!r)return;
   if(r==='__DELETE'){
     const ok=await dlgConfirm('Apagar cartão?',`Todas as compras e faturas do ${ct.nome} serão apagadas junto.`,'Apagar',true);
@@ -2378,8 +2480,8 @@ async function editarCartao(id){
     await carrega();renderCartoes();render();
     return;
   }
-  if(!r.nome||!r.nome.trim())return;
-  await db.from('cartoes').update({nome:r.nome.trim(),emoji:r.emoji||ct.emoji,dia_vencimento:parseInt(r.venc)||ct.dia_vencimento,carteira_id:r.cart||null}).eq('id',id);
+  if(!r.nome)return;
+  await db.from('cartoes').update({nome:r.nome,cor:r.cor,cor_letra:r.cor_letra,letra:r.letra,dia_vencimento:r.venc,carteira_id:r.cart||null}).eq('id',id);
   await carrega();renderCartoes();render();
 }
 
@@ -2404,13 +2506,13 @@ function renderFaturaDetalhe(){
   const{cartaoId,mes,ano}=S.faturaView;
   const ct=S.cartoes.find(c=>c.id===cartaoId);
   if(!ct){S.faturaView=null;renderCartoes();return;}
-  const comprasFat=S.compras.filter(c=>c.cartao_id===cartaoId&&c.mes_fatura===mes&&c.ano_fatura===ano);
+  const comprasFat=comprasDaFatura(cartaoId,mes,ano);
   const vTotal=valorFatura(cartaoId,mes,ano);
   const edit=faturaEdit(cartaoId,mes,ano);
   const pago=!!(edit&&edit.pago);
   let h=`<div style="padding:16px;">
     <button onclick="voltarCartoes()" style="background:none;color:var(--v);font-size:14px;padding:4px 0;margin-bottom:8px;">‹ Voltar aos cartões</button>
-    <div style="font-size:20px;font-weight:700;color:var(--tit);">${ct.emoji} Fatura ${ct.nome}</div>
+    <div style="display:flex;align-items:center;gap:10px;">${badgeBanco(ct,40)}<div style="font-size:20px;font-weight:700;color:var(--tit);">Fatura ${ct.nome}</div></div>
     <div style="display:flex;align-items:center;gap:8px;background:var(--bg2);border-radius:12px;padding:8px;margin:10px 0;border:0.5px solid var(--bd);">
       <button onclick="mudaFaturaView(-1)" style="width:34px;height:34px;border-radius:9px;background:var(--bg3);color:var(--v);font-size:16px;">‹</button>
       <div style="flex:1;text-align:center;">
@@ -2434,7 +2536,7 @@ function renderFaturaDetalhe(){
     h+='<div style="text-align:center;padding:20px;color:var(--ts);font-size:13px;">Nenhuma compra nesta fatura.</div>';
   } else {
     comprasFat.sort((x,y)=>x.dia-y.dia).forEach(cp=>{
-      const tag=cp.parcelas>1?`${cp.parcela_atual}/${cp.parcelas}`:'';
+      const tag=cp.recorrente?'assinatura':(cp.parcelas>1?`${cp.parcela_atual}/${cp.parcelas}`:'');
       const cat=nomeCateg(cp.categoria_id);
       h+=`<div onclick="abreCompra('${cp.id}')" style="background:var(--bg2);border-radius:12px;padding:12px 14px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;border:0.5px solid var(--bd);">
         <div><div style="font-size:13px;color:var(--tit);">${cp.descricao} ${tag?`<span class="tl-tag">${tag}</span>`:''}</div><div style="font-size:10px;color:var(--ts);margin-top:1px;">dia ${cp.dia}${cat?' · '+cat:''}</div></div>
@@ -2506,10 +2608,18 @@ async function desfazerPagamento(cartaoId,mes,ano){
 }
 
 // ── COMPRA NO CARTÃO ──
+function setCompraTipo(t){
+  S.compraTipo=t;
+  document.querySelectorAll('#cp-tipo button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  const pw=$('cp-parc-wrap');if(pw)pw.style.display=(t==='parcelado')?'block':'none';
+  const tit=$('cp-fatura-lbl-tit');if(tit)tit.textContent=(t==='assinatura')?'Começa em qual fatura?':'Entra em qual fatura?';
+  const hint=$('cp-tipo-hint');
+  if(hint)hint.textContent=t==='assinatura'?'Entra sozinha em toda fatura, mês após mês (ex: Deezer, Netflix).':(t==='parcelado'?'O valor é dividido e espalhado nas próximas faturas.':'');
+}
 function abreCompra(editId){
   S.compraEditId=editId||null;
   // popular select de cartões
-  $('cp-cartao').innerHTML=S.cartoes.map(c=>`<option value="${c.id}">${c.emoji} ${c.nome}</option>`).join('');
+  $('cp-cartao').innerHTML=S.cartoes.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
   if(!S.cartoes.length){
     dlgInfo('Sem cartões','Adicione um cartão primeiro na aba Cartões.');
     return;
@@ -2526,6 +2636,7 @@ function abreCompra(editId){
     popularCategSel('cp-categ',cp.categoria_id||null,'saida');
     S.compraFaturaMes=cp.mes_fatura;
     S.compraFaturaAno=cp.ano_fatura;
+    setCompraTipo(cp.recorrente?'assinatura':(cp.parcelas>1?'parcelado':'avista'));
     $('btn-del-compra').style.display='block';
   } else {
     $('sh-compra-tit').textContent='Nova compra no cartão';
@@ -2535,6 +2646,7 @@ function abreCompra(editId){
     popularCategSel('cp-categ',null,'saida');
     S.compraFaturaMes=S.mes+1;
     S.compraFaturaAno=S.ano;
+    setCompraTipo('avista');
     $('btn-del-compra').style.display='none';
   }
   atualizaFaturaLabel();
@@ -2557,29 +2669,32 @@ async function salvaCompra(){
   const val=parseFloat($('cp-val').value);
   const dia=parseInt($('cp-dia').value);
   const cartaoId=$('cp-cartao').value;
-  const parcelas=parseInt($('cp-parcelas').value)||1;
+  const tipo=S.compraTipo||'avista';
+  const parcelas=tipo==='parcelado'?(parseInt($('cp-parcelas').value)||1):1;
   const categVal=$('cp-categ').value;
   const categId=(categVal&&categVal!=='__nova')?categVal:null;
   if(!desc||!val||!dia||!cartaoId)return dlgInfo('Faltou algo','Preencha valor, descrição, dia e cartão.');
 
   if(S.compraEditId){
-    await db.from('compras_cartao').update({descricao:desc,valor:val,dia,cartao_id:cartaoId,mes_fatura:S.compraFaturaMes,ano_fatura:S.compraFaturaAno,categoria_id:categId}).eq('id',S.compraEditId);
+    await db.from('compras_cartao').update({descricao:desc,valor:val,dia,cartao_id:cartaoId,mes_fatura:S.compraFaturaMes,ano_fatura:S.compraFaturaAno,categoria_id:categId,recorrente:tipo==='assinatura'}).eq('id',S.compraEditId);
+  } else if(tipo==='assinatura'){
+    // Assinatura: 1 linha recorrente que entra em toda fatura a partir do mês escolhido
+    await db.from('compras_cartao').insert({user_id:S.user.id,cartao_id:cartaoId,descricao:desc,valor:val,dia,mes_fatura:S.compraFaturaMes,ano_fatura:S.compraFaturaAno,parcelas:1,parcela_atual:1,categoria_id:categId,recorrente:true});
   } else if(parcelas>1){
-    // Dividir em N parcelas, cada uma na fatura de um mês
     const valorParcela=val/parcelas;
     let m=S.compraFaturaMes-1,a=S.compraFaturaAno;
     const rows=[];
     for(let p=0;p<parcelas;p++){
-      rows.push({user_id:S.user.id,cartao_id:cartaoId,descricao:desc,valor:valorParcela,dia,mes_fatura:m+1,ano_fatura:a,parcelas,parcela_atual:p+1,categoria_id:categId});
+      rows.push({user_id:S.user.id,cartao_id:cartaoId,descricao:desc,valor:valorParcela,dia,mes_fatura:m+1,ano_fatura:a,parcelas,parcela_atual:p+1,categoria_id:categId,recorrente:false});
       m++;if(m>11){m=0;a++;}
     }
     await db.from('compras_cartao').insert(rows);
   } else {
-    await db.from('compras_cartao').insert({user_id:S.user.id,cartao_id:cartaoId,descricao:desc,valor:val,dia,mes_fatura:S.compraFaturaMes,ano_fatura:S.compraFaturaAno,parcelas:1,parcela_atual:1,categoria_id:categId});
+    await db.from('compras_cartao').insert({user_id:S.user.id,cartao_id:cartaoId,descricao:desc,valor:val,dia,mes_fatura:S.compraFaturaMes,ano_fatura:S.compraFaturaAno,parcelas:1,parcela_atual:1,categoria_id:categId,recorrente:false});
   }
   await carrega();fechaShCompra();
   if(S.faturaView)renderFaturaDetalhe();else renderCartoes();
-  render();toast('✓ Na fatura');
+  render();toast(tipo==='assinatura'?'✓ Assinatura adicionada':'✓ Na fatura');
 }
 
 async function delCompra(){
@@ -2683,9 +2798,18 @@ async function limparDados(){
     <input class="sh-inp" type="number" id="cp-dia" placeholder="Dia" min="1" max="31" inputmode="numeric"/>
     <div class="sh-lbl">Categoria (opcional)</div>
     <select class="sh-sel" id="cp-categ" onchange="categChange(this)"></select>
-    <div class="sh-lbl">Parcelas</div>
-    <input class="sh-inp" type="number" id="cp-parcelas" value="1" min="1" inputmode="numeric"/>
-    <div class="sh-lbl">Entra em qual fatura?</div>
+    <div class="sh-lbl">Tipo</div>
+    <div class="seg-tipo" id="cp-tipo">
+      <button type="button" data-t="avista" onclick="setCompraTipo('avista')">À vista</button>
+      <button type="button" data-t="parcelado" onclick="setCompraTipo('parcelado')">Parcelado</button>
+      <button type="button" data-t="assinatura" onclick="setCompraTipo('assinatura')">Assinatura</button>
+    </div>
+    <div id="cp-parc-wrap">
+      <div class="sh-lbl">Quantas parcelas</div>
+      <input class="sh-inp" type="number" id="cp-parcelas" value="1" min="1" inputmode="numeric"/>
+    </div>
+    <div class="sh-hint-tipo" id="cp-tipo-hint"></div>
+    <div class="sh-lbl" id="cp-fatura-lbl-tit">Entra em qual fatura?</div>
     <div style="display:flex;align-items:center;gap:8px;background:var(--bg3);border-radius:11px;padding:8px;">
       <button onclick="mudaFatura(-1)" style="width:32px;height:32px;border-radius:8px;background:var(--bg2);color:var(--v);font-size:16px;">‹</button>
       <div id="cp-fatura-lbl" style="flex:1;text-align:center;font-size:13px;font-weight:600;color:var(--tit);">—</div>
