@@ -889,18 +889,26 @@ async function carrega(){
 
 // Cria categorias básicas na primeira vez (modelo A: já vêm prontas, cliente edita/apaga)
 const CATEG_BASE=[
+  // Entradas
   {nome:'Salário',emoji:'💰',tipo:'entrada'},
   {nome:'Renda extra',emoji:'💵',tipo:'entrada'},
   {nome:'Aluguel recebido',emoji:'🏠',tipo:'entrada'},
+  {nome:'Benefício / Auxílio',emoji:'🤝',tipo:'entrada'},
+  // Saídas — cobre o dia a dia da maioria; o cliente só cria o que for específico
   {nome:'Mercado',emoji:'🛒',tipo:'saida'},
   {nome:'Moradia',emoji:'🏠',tipo:'saida'},
-  {nome:'Transporte',emoji:'🚗',tipo:'saida'},
-  {nome:'Saúde',emoji:'💊',tipo:'saida'},
+  {nome:'Contas de casa',emoji:'💡',tipo:'saida'},
+  {nome:'Internet e telefone',emoji:'📶',tipo:'saida'},
+  {nome:'Transporte',emoji:'🚌',tipo:'saida'},
+  {nome:'Combustível',emoji:'⛽',tipo:'saida'},
+  {nome:'Saúde e farmácia',emoji:'💊',tipo:'saida'},
   {nome:'Alimentação',emoji:'🍔',tipo:'saida'},
-  {nome:'Contas',emoji:'📱',tipo:'saida'},
-  {nome:'Lazer',emoji:'🎉',tipo:'saida'},
-  {nome:'Vestuário',emoji:'👕',tipo:'saida'},
+  {nome:'Assinaturas',emoji:'📺',tipo:'saida'},
   {nome:'Educação',emoji:'📚',tipo:'saida'},
+  {nome:'Vestuário',emoji:'👕',tipo:'saida'},
+  {nome:'Lazer',emoji:'🎉',tipo:'saida'},
+  {nome:'Família e filhos',emoji:'👨‍👩‍👧',tipo:'saida'},
+  {nome:'Empréstimos e cartão',emoji:'💳',tipo:'saida'},
 ];
 async function seedCategorias(){
   if(S.categorias.length>0)return; // já tem categorias (próprias ou semeadas antes)
@@ -928,6 +936,12 @@ function obRender(){
     </div>`;}).join('');
 }
 // Atualiza a letra do badge ao digitar (só se não tiver letra personalizada)
+function obRefreshBadgeCartao(i){
+  const b=S.obCartoes[i];
+  if(b.letra&&String(b.letra).trim())return;
+  const el=$('ob-ct-badge-'+i);
+  if(el){const bd=el.querySelector('span');if(bd)bd.textContent=inicialBanco(b.nome);}
+}
 function obRefreshBadge(i){
   const b=S.obBancos[i];
   if(b.letra&&String(b.letra).trim())return; // letra travada pelo usuário
@@ -936,15 +950,17 @@ function obRefreshBadge(i){
 }
 
 // ── MODAL: personalizar ícone do banco no onboarding ──
-let _obIco={i:null,cor:null,corLetra:null};
-function obAbreIcone(i){
-  const b=S.obBancos[i];
-  _obIco={i,cor:b.cor||CORES_BANCO[0],corLetra:b.corLetra||'#ffffff'};
+let _obIco={arr:'obBancos',i:null,cor:null,corLetra:null};
+function obAbreIcone(i){_obAbreIco('obBancos',i,'banco');}
+function obAbreIconeCartao(i){_obAbreIco('obCartoes',i,'cartão');}
+function _obAbreIco(arr,i,oque){
+  const b=S[arr][i];
+  _obIco={arr,i,cor:b.cor||CORES_BANCO[0],corLetra:b.corLetra||'#ffffff'};
   const letra=(b.letra&&String(b.letra).trim())?String(b.letra).trim().slice(0,2).toUpperCase():inicialBanco(b.nome);
   const bgs=CORES_BANCO.map(c=>`<button onclick="obIcoCor('${c}')" data-c="${c}" class="banco-swatch ico-bg" style="background:${c};${c===_obIco.cor?'outline:3px solid var(--tit);outline-offset:2px;':''}"></button>`).join('');
   const lts=CORES_LETRA.map(c=>`<button onclick="obIcoCorLetra('${c}')" data-c="${c}" class="banco-swatch ico-lt" style="background:${c};border:1.5px solid var(--bd);${c===_obIco.corLetra?'outline:3px solid var(--tit);outline-offset:2px;':''}"></button>`).join('');
   let h=`<div class="sh-handle"></div><div class="sh-tit">Personalizar ícone</div>
-    <div class="sh-sub">Deixe do seu jeito — assim você reconhece o banco de relance.</div>
+    <div class="sh-sub">Deixe do seu jeito — assim você reconhece o ${oque} de relance.</div>
     <div style="display:flex;justify-content:center;margin:16px 0;"><span id="ob-ico-prev">${badgeBanco({nome:b.nome,letra,cor:_obIco.cor,cor_letra:_obIco.corLetra},68)}</span></div>
     <div class="sh-lbl">Letra</div>
     <input class="sh-inp" id="ob-ico-letra" type="text" maxlength="2" value="${letra}" oninput="obIcoPrev()" style="text-align:center;font-weight:800;letter-spacing:2px;"/>
@@ -962,18 +978,19 @@ function obAbreIcone(i){
 function obIcoCor(c){_obIco.cor=c;document.querySelectorAll('#ob-ico-bgs .banco-swatch').forEach(b=>{b.style.outline=b.dataset.c===c?'3px solid var(--tit)':'none';b.style.outlineOffset='2px';});obIcoPrev();}
 function obIcoCorLetra(c){_obIco.corLetra=c;document.querySelectorAll('#ob-ico-lts .banco-swatch').forEach(b=>{b.style.outline=b.dataset.c===c?'3px solid var(--tit)':'none';b.style.outlineOffset='2px';});obIcoPrev();}
 function obIcoPrev(){
-  const letra=$('ob-ico-letra').value.trim().slice(0,2).toUpperCase()||inicialBanco(S.obBancos[_obIco.i].nome);
-  $('ob-ico-prev').innerHTML=badgeBanco({nome:S.obBancos[_obIco.i].nome,letra,cor:_obIco.cor,cor_letra:_obIco.corLetra},68);
+  const b=S[_obIco.arr][_obIco.i];
+  const letra=$('ob-ico-letra').value.trim().slice(0,2).toUpperCase()||inicialBanco(b.nome);
+  $('ob-ico-prev').innerHTML=badgeBanco({nome:b.nome,letra,cor:_obIco.cor,cor_letra:_obIco.corLetra},68);
 }
 function obIcoSalva(){
-  const i=_obIco.i;
+  const {arr,i}=_obIco;
+  const b=S[arr][i];
   const letraDigitada=$('ob-ico-letra').value.trim().slice(0,2).toUpperCase();
-  S.obBancos[i].cor=_obIco.cor;
-  S.obBancos[i].corLetra=_obIco.corLetra;
-  // Só grava letra personalizada se for diferente da inicial automática
-  S.obBancos[i].letra=(letraDigitada&&letraDigitada!==inicialBanco(S.obBancos[i].nome))?letraDigitada:null;
+  b.cor=_obIco.cor;
+  b.corLetra=_obIco.corLetra;
+  b.letra=(letraDigitada&&letraDigitada!==inicialBanco(b.nome))?letraDigitada:null;
   dlgFecha(null);
-  obRender();
+  if(arr==='obBancos')obRender();else obRenderCartoes();
 }
 function obAddBanco(){
   S.obBancos.push({nome:'',cor:CORES_BANCO[S.obBancos.length%CORES_BANCO.length],corLetra:'#ffffff',letra:null,saldo:''});
@@ -1145,6 +1162,9 @@ function obRenderCartoes(){
   if(!S.obCartoes.length){$('ob-cartoes').innerHTML='<div style="font-size:12px;color:var(--ts);text-align:center;padding:10px 0;">Nenhum cartão ainda. Se você tem cartão de crédito, adicione abaixo.</div>';return;}
   $('ob-cartoes').innerHTML=S.obCartoes.map((ct,i)=>{
     if(!ct.banco)ct.banco=b0;
+    if(!ct.cor)ct.cor='#820ad1';
+    if(!ct.corLetra)ct.corLetra='#ffffff';
+    const cardBadge={nome:ct.nome,cor:ct.cor,cor_letra:ct.corLetra,letra:ct.letra};
     const parc=(ct.parcelas||[]).map((p,j)=>{
       const tp=p.tipo||'parcela';
       return `
@@ -1164,12 +1184,12 @@ function obRenderCartoes(){
         <select class="sh-sel" onchange="obSelCategParc(this,${i},${j})">${obOptsCateg(p.categ,'saida')}</select>
       </div>`;}).join('');
     return `<div class="ob-item">
-      <div class="ob-item-head">
-        <span style="font-size:14px;font-weight:700;color:var(--tit);">💳 Cartão</span>
+      <div class="ob-item-head" style="align-items:flex-start;">
+        <span id="ob-ct-badge-${i}" class="ob-badge-edit" onclick="obAbreIconeCartao(${i})" title="Personalizar ícone">${badgeBanco(cardBadge,42)}<span class="ob-badge-pen">✎</span></span>
+        <div style="flex:1;"><div class="ob-mini-lbl">Nome do cartão</div><input class="sh-inp" type="text" placeholder="Ex: Nubank" value="${ct.nome||''}" oninput="S.obCartoes[${i}].nome=this.value;obRefreshBadgeCartao(${i})"/></div>
         <button class="ob-item-del" onclick="obDelCartao(${i})">×</button>
       </div>
-      <div class="ob-mini-lbl">Nome do cartão</div>
-      <input class="sh-inp" type="text" placeholder="Ex: Nubank" value="${ct.nome||''}" oninput="S.obCartoes[${i}].nome=this.value" style="margin-bottom:12px;"/>
+      <div style="height:12px;"></div>
       <div class="ob-parc-duo" style="margin-bottom:12px;">
         <div style="flex:1;"><div class="ob-mini-lbl">Vence dia</div><input class="sh-inp" type="number" placeholder="Ex: 10" min="1" max="31" inputmode="numeric" value="${ct.venc||''}" oninput="S.obCartoes[${i}].venc=this.value"/></div>
         <div style="flex:1.6;"><div class="ob-mini-lbl">Paga com</div><select class="sh-sel" onchange="S.obCartoes[${i}].banco=this.value">${obOptsBanco(ct.banco)}</select></div>
@@ -1186,7 +1206,7 @@ function obRenderCartoes(){
     </div>`;
   }).join('');
 }
-function obAddCartao(){S.obCartoes.push({nome:'',venc:'',banco:'',faturaAtual:'',parcelas:[]});obRenderCartoes();}
+function obAddCartao(){S.obCartoes.push({nome:'',venc:'',banco:'',cor:'#820ad1',corLetra:'#ffffff',letra:null,faturaAtual:'',parcelas:[]});obRenderCartoes();}
 function obDelCartao(i){S.obCartoes.splice(i,1);obRenderCartoes();}
 function obAddParc(i){S.obCartoes[i].parcelas.push({desc:'',valor:'',faltam:'',tipo:'parcela',categ:''});obRenderCartoes();}
 function obSetTipoParc(i,j,t){S.obCartoes[i].parcelas[j].tipo=t;obRenderCartoes();}
@@ -1221,6 +1241,7 @@ async function obFinCartoes(){
     if(ct._id)continue; // evita duplicar cartão se voltar e avançar
     const{data}=await db.from('cartoes').insert({
       user_id:S.user.id,nome:ct.nome.trim(),emoji:'💳',
+      cor:ct.cor||'#820ad1',cor_letra:ct.corLetra||'#ffffff',letra:(ct.letra&&String(ct.letra).trim())?String(ct.letra).trim().slice(0,2).toUpperCase():null,
       dia_vencimento:parseInt(ct.venc),carteira_id:ct.banco||null,
     }).select();
     const cartaoId=data&&data[0]?data[0].id:null;
