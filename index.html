@@ -475,6 +475,17 @@ body.claro{background:radial-gradient(140% 60% at 50% -10%, rgba(22,163,74,.07) 
 .conta-btn:active{transform:scale(.94);}
 .conta-check{width:26px;height:26px;border-radius:50%;background:var(--v);color:var(--onv);font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 
+.cart-tag-benef{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#04210f;background:#ffb447;padding:2px 7px;border-radius:999px;vertical-align:middle;margin-left:4px;}
+/* ═══ v4.3: contas agrupadas ═══ */
+.conta-ic{width:34px;height:34px;border-radius:10px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.cgrp{background:var(--bg2);border:0.5px solid var(--bd);border-radius:12px;margin-bottom:8px;overflow:hidden;}
+.cgrp-head{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;}
+.cgrp-arw{color:var(--ts);font-size:14px;transition:transform .2s ease;flex-shrink:0;}
+.cgrp.open .cgrp-arw{transform:rotate(90deg);}
+.cgrp-body{display:none;border-top:0.5px solid var(--bd);}
+.cgrp.open .cgrp-body{display:block;}
+.conta-row.sub{background:transparent;border:none;border-bottom:0.5px solid rgba(255,255,255,.05);border-radius:0;margin:0;padding:11px 14px 11px 46px;}
+.cgrp-body .conta-row.sub:last-child{border-bottom:none;}
 /* ═══ v4.0: tipo de compra, emoji picker ═══ */
 .seg-tipo{display:flex;gap:6px;background:var(--bg3);border-radius:12px;padding:5px;margin-bottom:4px;}
 .seg-tipo button{flex:1;border:none;background:transparent;color:var(--ts);font-family:inherit;font-size:12.5px;font-weight:700;padding:9px 4px;border-radius:9px;cursor:pointer;transition:.15s;}
@@ -582,6 +593,7 @@ body.claro{background:radial-gradient(140% 60% at 50% -10%, rgba(22,163,74,.07) 
       <div id="resumo-painel"></div>
       <div id="lista-carteiras"></div>
       <button class="btn-add" onclick="novaCarteira()" style="margin-top:8px;">+ Adicionar carteira</button>
+      <button class="btn-add" onclick="novoBeneficio()" style="margin-top:8px;">+ Cartão de benefício (VR / VA)</button>
     </div>
   </div>
   <div class="content" id="content-cartoes" style="display:none;">
@@ -639,25 +651,25 @@ body.claro{background:radial-gradient(140% 60% at 50% -10%, rgba(22,163,74,.07) 
   </div>
   <div id="fab-menu" style="display:none;position:fixed;bottom:calc(74px + var(--sb));left:0;right:0;max-width:520px;margin:0 auto;padding:0 16px;z-index:49;">
     <div style="display:flex;flex-direction:column;gap:8px;">
-      <button onclick="fechaFab();abreLanc(null);" style="background:var(--bg2);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;border:0.5px solid var(--bd);text-align:left;width:100%;">
+      <button onclick="fechaFab();abreLanc(null);" style="background:var(--bg2);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;border:1px solid var(--bd);text-align:left;width:100%;box-shadow:0 10px 30px -10px rgba(0,0,0,.6);">
         <div style="width:36px;height:36px;border-radius:10px;background:var(--vg);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">💰</div>
         <div><div style="font-size:14px;font-weight:500;color:var(--tit);">Lançamento</div><div style="font-size:11px;color:var(--ts);">Entrada ou saída no banco</div></div>
       </button>
-      <button onclick="fechaFab();abreFixo(null);" style="background:var(--bg2);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;border:0.5px solid var(--bd);text-align:left;width:100%;">
+      <button onclick="fechaFab();abreFixo(null);" style="background:var(--bg2);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;border:1px solid var(--bd);text-align:left;width:100%;box-shadow:0 10px 30px -10px rgba(0,0,0,.6);">
         <div style="width:36px;height:36px;border-radius:10px;background:var(--chip1);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🔁</div>
         <div><div style="font-size:14px;font-weight:500;color:var(--tit);">Fixo / Parcelado</div><div style="font-size:11px;color:var(--ts);">Repete todo mês ou por X vezes</div></div>
       </button>
-      <button onclick="fechaFab();abreCompra(null);" style="background:var(--bg2);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;border:0.5px solid var(--bd);text-align:left;width:100%;">
+      <button onclick="fechaFab();abreCompra(null);" style="background:var(--bg2);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;border:1px solid var(--bd);text-align:left;width:100%;box-shadow:0 10px 30px -10px rgba(0,0,0,.6);">
         <div style="width:36px;height:36px;border-radius:10px;background:var(--chip2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">💳</div>
         <div><div style="font-size:14px;font-weight:500;color:var(--tit);">Compra no cartão</div><div style="font-size:11px;color:var(--ts);">Entra na fatura, não no saldo agora</div></div>
       </button>
-      <button onclick="fechaFab();abreTransfer();" style="background:var(--bg2);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;border:0.5px solid var(--bd);text-align:left;width:100%;">
+      <button onclick="fechaFab();abreTransfer();" style="background:var(--bg2);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;border:1px solid var(--bd);text-align:left;width:100%;box-shadow:0 10px 30px -10px rgba(0,0,0,.6);">
         <div style="width:36px;height:36px;border-radius:10px;background:var(--chip3);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🔄</div>
         <div><div style="font-size:14px;font-weight:500;color:var(--tit);">Transferência</div><div style="font-size:11px;color:var(--ts);">Mover dinheiro entre seus bancos</div></div>
       </button>
     </div>
   </div>
-  <div id="fab-overlay" style="display:none;position:fixed;inset:0;z-index:48;" onclick="fechaFab()"></div>
+  <div id="fab-overlay" style="display:none;position:fixed;inset:0;z-index:48;background:rgba(5,7,10,.6);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);" onclick="fechaFab()"></div>
 </div>
 
 <!-- SHEET: LANÇAMENTO -->
@@ -1758,9 +1770,11 @@ function setFixoRep(r){
 
 function fechaShFixo(){$('sh-fixo').classList.remove('aberto');}
 
-let _escopoAcao=null;
+let _escopoAcao=null,_escopoLock=0;
 
 function pedirEscopoFixo(acao){
+  // Trava anti "clique fantasma": ignora reabertura logo após escolher uma opção
+  if(Date.now()-_escopoLock<700)return;
   // Se é novo fixo, salva direto sem perguntar
   if(!S.fixoEditId&&acao==='salvar'){salvaFixoEscopo('todos');return;}
   _escopoAcao=acao;
@@ -1771,6 +1785,8 @@ function pedirEscopoFixo(acao){
 function fechaModalEscopo(){$('modal-escopo').classList.remove('aberto');}
 
 function confirmaEscopoFixo(escopo){
+  _escopoLock=Date.now();           // arma a trava antes de fechar
+  fechaShFixo();                    // tira o botão Salvar de baixo do toque
   fechaModalEscopo();
   if(_escopoAcao==='salvar') salvaFixoEscopo(escopo);
   else apagarFixoEscopo(escopo);
@@ -1794,7 +1810,7 @@ async function salvaFixoEscopo(escopo){
       mes_inicio:ini.mes,ano_inicio:ini.ano,ativo:true,
     });
   } else if(escopo==='todos'){
-    await db.from('fixos').update({descricao:desc,valor:val,carteira_id:cartId,dia,categoria_id:categId}).eq('id',S.fixoEditId);
+    await db.from('fixos').update({descricao:desc,valor:val,tipo:S.fixoTipo,carteira_id:cartId,dia,parcelas,categoria_id:categId}).eq('id',S.fixoEditId);
   } else if(escopo==='frente'){
     await db.from('fixos').update({mes_fim:S.fixoMesRef,ano_fim:S.fixoAnoRef}).eq('id',S.fixoEditId);
     await db.from('fixos').insert({
@@ -2133,6 +2149,18 @@ function mesCadastro(){
   if(isNaN(d))return null;
   return {m:d.getMonth(),a:d.getFullYear()};
 }
+// Agrupamento de contas por categoria (para o Resumo)
+function catDeItem(it){
+  if(it.tipo==='fatura')return {id:'__fatura',emoji:'💳',nome:'Faturas de cartão'};
+  const c=S.categorias.find(x=>x.id===it.ref.categoria_id);
+  if(c)return {id:c.id,emoji:c.emoji,nome:c.nome};
+  return {id:'__sem',emoji:'🏷️',nome:'Sem categoria'};
+}
+function agrupaContas(items){
+  const map={};
+  items.forEach(it=>{const c=catDeItem(it);if(!map[c.id])map[c.id]={cat:c,items:[],total:0};map[c.id].items.push(it);map[c.id].total+=it.val;});
+  return Object.values(map).sort((a,b)=>b.total-a.total);
+}
 function renderCarteiras(){
   const rp=$('resumo-painel');if(rp)rp.innerHTML='';
   const lista=$('lista-carteiras');
@@ -2227,14 +2255,43 @@ function renderCarteiras(){
     </div>`;
   };
 
+  // Linha individual (usada em grupo de 1 item, com ícone; ou dentro de um grupo, indentada)
+  const rowPend=(it,lead)=>{
+    const venceu=isCur&&it.dia<HJD&&!it.isEnt;
+    const acao=it.tipo==='fatura'?`pagarFatura('${it.ref.cartao.id}',${it.ref.mes},${it.ref.ano})`:`pagarFixo('${it.ref.id}',${m+1},${a})`;
+    const btn=podeConfirmar?`<button class="conta-btn" onclick="event.stopPropagation();${acao}">${it.isEnt?'Receber':'Pagar'}</button>`:'';
+    const sub=venceu?'⚠️ venceu dia '+it.dia:(isFut?'previsto dia '+it.dia:'dia '+it.dia);
+    return `<div class="conta-row${venceu?' venceu':''}${lead?'':' sub'}">
+      ${lead?`<div class="conta-ic">${lead}</div>`:''}
+      <div class="conta-info"><div class="conta-nome">${it.nome}</div><div class="conta-sub">${sub}</div></div>
+      <div class="conta-val ${it.isEnt?'pos':'neg'}">${it.isEnt?'+':'-'}R$ ${brl(it.val)}</div>
+      ${btn}
+    </div>`;
+  };
+  const secaoContas=(items,isReceber)=>{
+    if(!items.length)return '';
+    let hh=`<div class="conta-grp-lbl">${isReceber?'A receber':'A pagar'} (${items.length})</div>`;
+    agrupaContas(items).forEach(g=>{
+      if(g.items.length===1){ hh+=rowPend(g.items[0],g.cat.emoji); return; }
+      const body=g.items.map(it=>rowPend(it,null)).join('');
+      hh+=`<div class="cgrp${isReceber?'':' neg'}">
+        <div class="cgrp-head" onclick="this.parentElement.classList.toggle('open')">
+          <div class="conta-ic">${g.cat.emoji}</div>
+          <div class="conta-info"><div class="conta-nome">${g.cat.nome}</div><div class="conta-sub">${g.items.length} ${isReceber?'entradas':'contas'}</div></div>
+          <div class="conta-val ${isReceber?'pos':'neg'}">${isReceber?'+':'-'}R$ ${brl(g.total)}</div>
+          <div class="cgrp-arw">›</div>
+        </div>
+        <div class="cgrp-body">${body}</div>
+      </div>`;
+    });
+    return hh;
+  };
   if(pend.length||feito.length){
     h+=`<div class="sec-tit">Contas ${isFut?'previstas':'do mês'}</div>`;
-    if(pend.length){
-      h+=`<div class="conta-grp-lbl">${isFut?'Previstas':'A confirmar'} (${pend.length})</div>`;
-      h+=pend.map(linhaPend).join('');
-    }
+    h+=secaoContas(pend.filter(it=>it.isEnt),true);
+    h+=secaoContas(pend.filter(it=>!it.isEnt),false);
     if(feito.length){
-      h+=`<div class="conta-grp-lbl" style="margin-top:12px;">Já confirmadas (${feito.length})</div>`;
+      h+=`<div class="conta-grp-lbl" style="margin-top:14px;">Já confirmadas (${feito.length})</div>`;
       h+=feito.map(linhaFeito).join('');
     }
   }
@@ -2290,7 +2347,7 @@ function renderCarteiras(){
     <div class="cart-card" onclick="editarCarteira('${cart.id}')">
       ${badgeBanco(cart,46)}
       <div style="flex:1;min-width:0;">
-        <div class="cart-nome">${cart.nome}</div>
+        <div class="cart-nome">${cart.nome}${cart.beneficio?' <span class="cart-tag-benef">benefício</span>':''}</div>
         <div class="cart-saldo" style="color:${principal<0?'var(--r)':'var(--v)'}">${fmt(principal)}</div>
         <div class="cart-meta">${meta}</div>
       </div>
@@ -2362,6 +2419,69 @@ function dlgBancoColeta(){
   dlgBancoFecha({nome,saldo:$('banco-saldo').value,cor:_bancoCor,cor_letra:_bancoCorLetra,letra});
 }
 
+let _bfResolve=null,_bfCor=null,_bfCorLetra=null;
+function dlgBeneficio(){
+  return new Promise(res=>{
+    _bfResolve=res;_bfCor='#22c55e';_bfCorLetra='#04210f';
+    const bgs=CORES_BANCO.map(c=>`<button onclick="bfSetCor('${c}')" data-cor="${c}" class="banco-swatch" style="background:${c};${c===_bfCor?'outline:3px solid var(--tit);outline-offset:2px;':''}"></button>`).join('');
+    const lts=CORES_LETRA.map(c=>`<button onclick="bfSetCorLetra('${c}')" data-cor="${c}" class="banco-swatch" style="background:${c};border:1.5px solid var(--bd);${c===_bfCorLetra?'outline:3px solid var(--tit);outline-offset:2px;':''}"></button>`).join('');
+    let h=`<div class="sh-handle"></div><div class="sh-tit">Cartão de benefício</div>
+      <div class="sh-sub">VR, VA, Pluxe, Alelo... Ele recebe uma recarga todo mês e você gasta desse saldo.</div>
+      <div style="display:flex;align-items:center;gap:12px;margin:14px 0;">
+        <span id="bf-prev">${badgeBanco({nome:'',letra:'',cor:_bfCor,cor_letra:_bfCorLetra},54)}</span>
+        <input class="sh-inp" id="bf-nome" type="text" placeholder="Ex: Pluxe, VR Caju" oninput="bfPrev()" style="flex:1;margin:0;"/>
+      </div>
+      <div class="sh-lbl">Letra do ícone</div>
+      <input class="sh-inp" id="bf-letra" type="text" maxlength="2" placeholder="Ex: P" oninput="bfPrev()" style="text-align:center;font-weight:800;letter-spacing:2px;"/>
+      <div class="sh-lbl">Cor do fundo</div>
+      <div id="bf-cores" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">${bgs}</div>
+      <div class="sh-lbl">Cor da letra</div>
+      <div id="bf-cores-letra" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">${lts}</div>
+      <div class="sh-lbl">Saldo atual no cartão (R$)</div>
+      <input class="sh-inp" id="bf-saldo" type="number" inputmode="decimal" placeholder="0,00"/>
+      <div class="ob-parc-duo" style="margin-top:6px;">
+        <div style="flex:1.6;"><div class="sh-lbl" style="margin-top:0;">Recarga todo mês (R$)</div><input class="sh-inp" id="bf-recarga" type="number" inputmode="decimal" placeholder="Ex: 600"/></div>
+        <div style="flex:1;"><div class="sh-lbl" style="margin-top:0;">Dia da recarga</div><input class="sh-inp" id="bf-dia" type="number" min="1" max="31" inputmode="numeric" placeholder="Ex: 5"/></div>
+      </div>
+      <div style="font-size:11px;color:var(--ts);margin-top:8px;line-height:1.45;">A recarga entra sozinha todo mês. Se você perder o benefício, é só abrir a recarga em "A receber" e parar daqui pra frente.</div>
+      <div class="sh-actions">
+        <button class="btn-canc" onclick="bfFecha(null)">Cancelar</button>
+        <button class="btn-salv" onclick="bfColeta()">Criar</button>
+      </div>`;
+    $('dlg-box').innerHTML=h;$('dlg-ov').classList.add('aberto');
+  });
+}
+function bfSetCor(c){_bfCor=c;document.querySelectorAll('#bf-cores .banco-swatch').forEach(b=>{b.style.outline=b.dataset.cor===c?'3px solid var(--tit)':'none';b.style.outlineOffset='2px';});bfPrev();}
+function bfSetCorLetra(c){_bfCorLetra=c;document.querySelectorAll('#bf-cores-letra .banco-swatch').forEach(b=>{b.style.outline=b.dataset.cor===c?'3px solid var(--tit)':'none';b.style.outlineOffset='2px';});bfPrev();}
+function bfPrev(){const nome=$('bf-nome').value;const letra=$('bf-letra').value.trim().slice(0,2).toUpperCase();$('bf-prev').innerHTML=badgeBanco({nome,letra,cor:_bfCor,cor_letra:_bfCorLetra},54);}
+function bfFecha(v){$('dlg-ov').classList.remove('aberto');if(_bfResolve){const r=_bfResolve;_bfResolve=null;r(v);}}
+function bfColeta(){
+  const nome=$('bf-nome').value.trim();if(!nome)return;
+  const ld=$('bf-letra').value.trim().slice(0,2).toUpperCase();
+  const letra=(ld&&ld!==inicialBanco(nome))?ld:null;
+  bfFecha({nome,cor:_bfCor,cor_letra:_bfCorLetra,letra,saldo:$('bf-saldo').value,recarga:$('bf-recarga').value,dia:$('bf-dia').value});
+}
+async function novoBeneficio(){
+  const r=await dlgBeneficio();
+  if(!r||!r.nome)return;
+  const {data}=await db.from('carteiras').insert({
+    user_id:S.user.id,nome:r.nome,emoji:'🍽️',cor:r.cor,cor_letra:r.cor_letra,letra:r.letra,
+    saldo:parseFloat(r.saldo)||0,beneficio:true,
+  }).select();
+  const cartId=data&&data[0]?data[0].id:null;
+  const recarga=parseFloat(r.recarga)||0, dia=parseInt(r.dia)||1;
+  if(cartId&&recarga>0){
+    const catRec=S.categorias.find(c=>c.nome==='Benefício / Auxílio'&&(c.tipo||'saida')==='entrada');
+    const ini=inicioFixoMes(dia,S.mes,S.ano);
+    await db.from('fixos').insert({
+      user_id:S.user.id,descricao:'Recarga '+r.nome,valor:recarga,tipo:'entrada',
+      dia,carteira_id:cartId,parcelas:null,categoria_id:catRec?catRec.id:null,
+      mes_inicio:ini.mes,ano_inicio:ini.ano,ativo:true,
+    });
+  }
+  await carrega();renderCarteiras();render();toast('✓ Cartão de benefício criado');
+}
+
 async function novaCarteira(){
   const r=await dlgBanco('Nova carteira',null);
   if(!r||r==='__DELETE'||!r.nome||!r.nome.trim())return;
@@ -2374,11 +2494,20 @@ async function editarCarteira(id){
   const r=await dlgBanco('Editar carteira',cart);
   if(!r)return;
   if(r==='__DELETE'){
-    const ok=await dlgConfirm('Apagar carteira?',`"${cart.nome}" será removida. Lançamentos e fixos dela ficam sem banco.`,'Apagar',true);
+    const msg=cart.beneficio?`"${cart.nome}" e a recarga mensal dela serão removidas.`:`"${cart.nome}" será removida. Lançamentos e fixos dela ficam sem banco.`;
+    const ok=await dlgConfirm('Apagar carteira?',msg,'Apagar',true);
     if(!ok)return;
-    await db.from('lancamentos').update({carteira_id:null}).eq('carteira_id',id);
-    await db.from('fixos').update({carteira_id:null}).eq('carteira_id',id);
-    await db.from('fixos_excecoes').update({carteira_id:null}).eq('carteira_id',id);
+    if(cart.beneficio){
+      // Cartão de benefício: apaga a recarga e os fixos dele de vez (não deixa renda órfã)
+      const fids=S.fixos.filter(fx=>fx.carteira_id===id).map(fx=>fx.id);
+      for(const fid of fids){await db.from('fixos_excecoes').delete().eq('fixo_id',fid);}
+      await db.from('fixos').delete().eq('carteira_id',id);
+      await db.from('lancamentos').update({carteira_id:null}).eq('carteira_id',id);
+    } else {
+      await db.from('lancamentos').update({carteira_id:null}).eq('carteira_id',id);
+      await db.from('fixos').update({carteira_id:null}).eq('carteira_id',id);
+      await db.from('fixos_excecoes').update({carteira_id:null}).eq('carteira_id',id);
+    }
     await db.from('cartoes').update({carteira_id:null}).eq('carteira_id',id);
     await db.from('carteiras').delete().eq('id',id);
     await carrega();renderCarteiras();render();
