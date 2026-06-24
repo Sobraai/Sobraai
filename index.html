@@ -660,9 +660,9 @@ body.claro{background:radial-gradient(140% 60% at 50% -10%, rgba(22,163,74,.07) 
         <div style="width:36px;height:36px;border-radius:10px;background:var(--chip1);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🔁</div>
         <div><div style="font-size:14px;font-weight:500;color:var(--tit);">Fixo / Parcelado</div><div style="font-size:11px;color:var(--ts);">Repete todo mês ou por X vezes</div></div>
       </button>
-      <button onclick="fechaFab();abreCompra(null);" style="background:var(--bg2);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;border:1px solid var(--bd);text-align:left;width:100%;box-shadow:0 10px 30px -10px rgba(0,0,0,.6);">
+      <button onclick="fechaFab();abreCartao();" style="background:var(--bg2);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;border:1px solid var(--bd);text-align:left;width:100%;box-shadow:0 10px 30px -10px rgba(0,0,0,.6);">
         <div style="width:36px;height:36px;border-radius:10px;background:var(--chip2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">💳</div>
-        <div><div style="font-size:14px;font-weight:500;color:var(--tit);">Compra no cartão</div><div style="font-size:11px;color:var(--ts);">Entra na fatura, não no saldo agora</div></div>
+        <div><div style="font-size:14px;font-weight:500;color:var(--tit);">Gasto no cartão</div><div style="font-size:11px;color:var(--ts);">Crédito (entra na fatura) ou VR/VA (benefício)</div></div>
       </button>
       <button onclick="fechaFab();abreTransfer();" style="background:var(--bg2);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;border:1px solid var(--bd);text-align:left;width:100%;box-shadow:0 10px 30px -10px rgba(0,0,0,.6);">
         <div style="width:36px;height:36px;border-radius:10px;background:var(--chip3);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🔄</div>
@@ -1312,6 +1312,13 @@ async function obTermina(montou){
 }
 
 // ── SALDO ──
+function erroSupabase(error){
+  const m=(error&&error.message)||'erro desconhecido';
+  if(/column .* does not exist|beneficio|cor_letra|recorrente/i.test(m)){
+    return 'O banco de dados está desatualizado. Rode o SQL mais recente (sobraai_supabase) no Supabase e tente de novo.\n\nDetalhe: '+m;
+  }
+  return m;
+}
 function ehBenef(cid){return !!cid&&S.carteiras.some(c=>c.id===cid&&c.beneficio);}
 function saldoTotal(){
   return S.carteiras.filter(c=>!c.beneficio).reduce((s,c)=>s+parseFloat(c.saldo||0),0);
@@ -1363,6 +1370,8 @@ function fixosDoMes(m,a){
 }
 // Dia e valor efetivos de um fixo no mês (usa pagamento real se confirmado)
 function fixoDiaEff(f){return (f._pago&&f._pago.dia_pago)?f._pago.dia_pago:f.dia;}
+// Grampeia o dia ao último dia do mês: fixo dia 30/31 cai no dia 28/29/30 quando o mês é mais curto
+function diaNoMes(diaBase,m,a){const ult=new Date(a,m+1,0).getDate();return Math.min(diaBase,ult);}
 function fixoValEff(f){return (f._pago&&f._pago.valor!=null)?parseFloat(f._pago.valor):parseFloat(f.valor);}
 
 // ── FATURAS ──
@@ -1427,7 +1436,7 @@ function saldoDia(d,m,a){
       const fixesDesseMes=fixosDoMes(im,ia);
       fixesDesseMes.forEach(f=>{
         if(ehBenef(f.carteira_id))return;
-        if(fixoDiaEff(f)<=limDia){
+        if(diaNoMes(fixoDiaEff(f),im,ia)<=limDia){
           deltaFixos+=(f.tipo==='entrada'?1:-1)*fixoValEff(f);
         }
       });
@@ -1495,7 +1504,7 @@ function render(){
     const isHj=isAtual&&d===HJD;
     const isFutD=isFut||(isAtual&&d>HJD);
     const dLancs=dm.filter(l=>l.dia===d);
-    const dFixos=fixesMes.filter(f=>fixoDiaEff(f)===d);
+    const dFixos=fixesMes.filter(f=>diaNoMes(fixoDiaEff(f),m,a)===d);
     const dFaturas=faturasMes.filter(f=>f.dia===d&&!f.paga);
     const temItem=dLancs.length||dFixos.length||dFaturas.length;
     const saldo=saldoDia(d,m,a);
@@ -1553,7 +1562,7 @@ function render(){
       const pago=!!f._pago;
       const vEff=fixoValEff(f);
       const mostraCheck=!isFut;
-      const venceuSemPagar=isAtual&&!pago&&fixoDiaEff(f)<HJD;
+      const venceuSemPagar=isAtual&&!pago&&diaNoMes(fixoDiaEff(f),m,a)<HJD;
       const sub=[];
       if(cart)sub.push(cart.nome);
       if(pago)sub.push(`✓ ${isEnt?'recebido':'pago'}${(f._pago.dia_pago&&f._pago.dia_pago!==f.dia)?' dia '+f._pago.dia_pago:''}`);
@@ -1646,8 +1655,19 @@ function animaValor(el,novo){
 })();
 
 // ── LANÇAMENTO ──
-function abreLanc(dia,editId){
+function abreLanc(dia,editId,presetCart){
   S.editId=editId||null;
+  if(!editId&&presetCart){
+    $('sh-lanc-tit').textContent='Gastar no cartão';
+    setTipo('saida');
+    $('l-val').value='';$('l-desc').value='';
+    $('l-dia').value=dia||(S.mes===HJM&&S.ano===HJA?HJD:'');
+    $('btn-del').style.display='none';
+    renderCartSel(presetCart);
+    popularCategSel('l-categ',null,'saida');
+    $('sh-lanc').classList.add('aberto');
+    return;
+  }
   if(editId){
     const l=S.lancs.find(x=>x.id===editId);
     if(!l)return;
@@ -1705,7 +1725,7 @@ async function salvaLanc(){
   } else {
     await db.from('lancamentos').insert(dados);
   }
-  await carrega();fechaSh();render();toast('✓ Lançado');
+  await carrega();fechaSh();render();if($('content-cartoes').style.display!=='none')renderCartoes();toast('✓ Lançado');
 }
 
 async function delLanc(){
@@ -2123,7 +2143,7 @@ function saldoCarteira(cartId,limD,limM,limA){
     while(ia<a||(ia===a&&im<=m)){
       const limDia=ia===a&&im===m?d:new Date(ia,im+1,0).getDate();
       fixosDoMes(im,ia).forEach(f=>{
-        if(f.carteira_id===cartId&&fixoDiaEff(f)<=limDia){
+        if(f.carteira_id===cartId&&diaNoMes(fixoDiaEff(f),im,ia)<=limDia){
           saldo+=(f.tipo==='entrada'?1:-1)*fixoValEff(f);
         }
       });
@@ -2218,7 +2238,7 @@ function renderCarteiras(){
   const faturasMes=faturasDoMes(m,a);
   const pend=[],feito=[];
   fixesMes.forEach(f=>{
-    const item={tipo:'fixo',ref:f,isEnt:f.tipo==='entrada',nome:f.descricao,dia:fixoDiaEff(f),val:fixoValEff(f),pago:!!f._pago};
+    const item={tipo:'fixo',ref:f,isEnt:f.tipo==='entrada',nome:f.descricao,dia:diaNoMes(fixoDiaEff(f),m,a),val:fixoValEff(f),pago:!!f._pago};
     (item.pago?feito:pend).push(item);
   });
   faturasMes.forEach(fat=>{
@@ -2486,22 +2506,24 @@ function bfColeta(){
 async function novoBeneficio(){
   const r=await dlgBeneficio(null);
   if(!r||!r.nome)return;
-  const {data}=await db.from('carteiras').insert({
+  const {data,error}=await db.from('carteiras').insert({
     user_id:S.user.id,nome:r.nome,emoji:'🍽️',cor:r.cor,cor_letra:r.cor_letra,letra:r.letra,
     saldo:parseFloat(r.saldo)||0,beneficio:true,
   }).select();
+  if(error){dlgInfo('Não consegui criar',erroSupabase(error));return;}
   const cartId=data&&data[0]?data[0].id:null;
   const recarga=parseFloat(r.recarga)||0, dia=parseInt(r.dia)||1;
   if(cartId&&recarga>0){
     const catRec=S.categorias.find(c=>c.nome==='Benefício / Auxílio'&&(c.tipo||'saida')==='entrada');
     const ini=inicioFixoMes(dia,S.mes,S.ano);
-    await db.from('fixos').insert({
+    const{error:e2}=await db.from('fixos').insert({
       user_id:S.user.id,descricao:'Recarga '+r.nome,valor:recarga,tipo:'entrada',
       dia,carteira_id:cartId,parcelas:null,categoria_id:catRec?catRec.id:null,
       mes_inicio:ini.mes,ano_inicio:ini.ano,ativo:true,
     });
+    if(e2){dlgInfo('Cartão criado, mas a recarga falhou',erroSupabase(e2));}
   }
-  await carrega();renderCarteiras();render();toast('✓ Cartão de benefício criado');
+  await carrega();renderCartoes();render();if($('content-carteiras').style.display!=='none')renderCarteiras();toast('✓ Cartão de benefício criado');
 }
 
 async function editarBeneficio(id){
@@ -2594,6 +2616,7 @@ function navMesCartoes(d){
 function renderCartoes(){
   const el=$('content-cartoes');
   if(S.faturaView){renderFaturaDetalhe();return;}
+  if(S.benefView){renderBeneficioDetalhe();return;}
   const cm=S.cartoesMes,ca=S.cartoesAno;
   const isMesAtual=cm===HJM&&ca===HJA;
   let h=`<div style="padding:16px;">
@@ -2640,17 +2663,17 @@ function renderCartoes(){
       const saldo=saldoCarteira(c.id);
       const rec=S.fixos.find(fx=>fx.carteira_id===c.id&&fx.tipo==='entrada'&&fx.ativo!==false);
       const recAtiva=rec&&!(rec.mes_fim&&rec.ano_fim&&(HJA*100+(HJM+1))>=(rec.ano_fim*100+rec.mes_fim));
-      h+=`<div style="background:var(--bg2);border-radius:14px;padding:14px 16px;margin-bottom:8px;border:0.5px solid var(--bd);">
+      h+=`<div style="background:var(--bg2);border-radius:14px;padding:14px 16px;margin-bottom:8px;border:0.5px solid var(--bd);cursor:pointer;" onclick="verBeneficio('${c.id}')">
         <div style="display:flex;align-items:center;gap:12px;">
           ${badgeBanco(c,46)}
           <div style="flex:1;min-width:0;">
             <div style="font-size:14px;font-weight:600;color:var(--tit);">${c.nome} <span class="cart-tag-benef">benefício</span></div>
             <div style="font-size:11px;color:var(--ts);margin-top:2px;">${recAtiva?`Recarga R$ ${brl(rec.valor)} · dia ${rec.dia}`:'Sem recarga ativa'}</div>
           </div>
-          <button onclick="editarBeneficio('${c.id}')" style="background:var(--bg3);border-radius:8px;padding:6px 12px;color:var(--ts);font-size:12px;">Editar</button>
+          <button onclick="event.stopPropagation();editarBeneficio('${c.id}')" style="background:var(--bg3);border-radius:8px;padding:6px 12px;color:var(--ts);font-size:12px;">Editar</button>
         </div>
         <div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--bd);display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:12px;color:var(--ts);">Saldo disponível</span>
+          <span style="font-size:12px;color:var(--ts);">Saldo disponível ›</span>
           <span style="font-size:16px;font-weight:700;color:var(--v);">R$ ${brl(saldo)}</span>
         </div>
       </div>`;
@@ -2742,6 +2765,59 @@ function mudaFaturaView(d){
   renderFaturaDetalhe();
 }
 
+function verBeneficio(id){S.benefView=id;renderCartoes();}
+function voltarDoBeneficio(){S.benefView=null;renderCartoes();}
+function gastarNoBeneficio(id){ abreLanc(null,null,id); }
+function renderBeneficioDetalhe(){
+  const el=$('content-cartoes');
+  const c=S.carteiras.find(x=>x.id===S.benefView);
+  if(!c){S.benefView=null;return renderCartoes();}
+  const saldo=saldoCarteira(c.id);
+  const rec=S.fixos.find(fx=>fx.carteira_id===c.id&&fx.tipo==='entrada');
+  const recAtiva=rec&&!(rec.mes_fim&&rec.ano_fim&&(HJA*100+(HJM+1))>=(rec.ano_fim*100+rec.mes_fim));
+
+  // Monta o extrato: recargas (mês a mês até hoje) + lançamentos da carteira
+  const ext=[];
+  if(rec){
+    let im=rec.mes_inicio-1,ia=rec.ano_inicio;
+    while(ia<HJA||(ia===HJA&&im<=HJM)){
+      const fimOrd=(rec.mes_fim&&rec.ano_fim)?(rec.ano_fim*100+rec.mes_fim):null;
+      const ord=ia*100+(im+1);
+      const dentro=!fimOrd||ord<fimOrd;
+      const diaR=diaNoMes(rec.dia,im,ia);
+      // só conta recarga cujo dia já chegou (no mês atual) ou meses passados
+      const jaOcorreu=(ia<HJA)||(ia===HJA&&im<HJM)||(ia===HJA&&im===HJM&&diaR<=HJD);
+      if(dentro&&jaOcorreu)ext.push({ord:ia*10000+(im+1)*100+diaR,nome:'Recarga',sub:`${MESES[im]} ${ia}`,val:parseFloat(rec.valor),ent:true});
+      im++;if(im>11){im=0;ia++;}
+    }
+  }
+  S.lancs.filter(l=>l.carteira_id===c.id).forEach(l=>{
+    ext.push({ord:l.ano*10000+l.mes*100+l.dia,nome:l.descricao,sub:`dia ${l.dia}/${l.mes}`,val:parseFloat(l.valor),ent:l.tipo==='entrada'});
+  });
+  ext.sort((a,b)=>b.ord-a.ord);
+
+  let h=`<div style="padding:16px;">
+    <button onclick="voltarDoBeneficio()" style="background:none;color:var(--v);font-size:14px;font-weight:600;margin-bottom:14px;">‹ Voltar</button>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">${badgeBanco(c,48)}<div><div style="font-size:20px;font-weight:700;color:var(--tit);">${c.nome}</div><div style="font-size:11px;color:var(--ts);">${recAtiva?`Recarrega R$ ${brl(rec.valor)} todo dia ${rec.dia}`:'Sem recarga ativa'}</div></div></div>
+    <div class="cart-hero" style="margin-bottom:16px;">
+      <div class="cart-hero-lbl">Saldo disponível no cartão</div>
+      <div class="cart-hero-val">R$ ${brl(saldo)}</div>
+      <div class="cart-hero-fim">Dinheiro de benefício — separado do seu saldo do banco.</div>
+    </div>
+    <button class="btn-add" onclick="gastarNoBeneficio('${c.id}')" style="margin-bottom:16px;">+ Gastar neste cartão</button>
+    <div class="sec-tit">Extrato</div>`;
+  if(!ext.length){
+    h+='<div style="text-align:center;padding:20px;color:var(--ts);font-size:13px;">Ainda sem movimentações. Toque em "Gastar neste cartão" para lançar uma compra.</div>';
+  } else {
+    h+=ext.map(e=>`<div class="conta-row">
+      <div class="conta-ic">${e.ent?'⬆️':'🍽️'}</div>
+      <div class="conta-info"><div class="conta-nome">${e.nome}</div><div class="conta-sub">${e.sub}</div></div>
+      <div class="conta-val ${e.ent?'pos':'neg'}">${e.ent?'+':'-'}R$ ${brl(e.val)}</div>
+    </div>`).join('');
+  }
+  h+=`<button class="btn-add" onclick="editarBeneficio('${c.id}')" style="margin-top:8px;background:var(--bg3);">Editar cartão</button></div>`;
+  el.innerHTML=h;
+}
 function renderFaturaDetalhe(){
   const el=$('content-cartoes');
   if(!S.faturaView){renderCartoes();return;}
@@ -2857,6 +2933,43 @@ function setCompraTipo(t){
   const tit=$('cp-fatura-lbl-tit');if(tit)tit.textContent=(t==='assinatura')?'Começa em qual fatura?':'Entra em qual fatura?';
   const hint=$('cp-tipo-hint');
   if(hint)hint.textContent=t==='assinatura'?'Entra sozinha em toda fatura, mês após mês (ex: Deezer, Netflix).':(t==='parcelado'?'O valor é dividido e espalhado nas próximas faturas.':'');
+}
+// Decide entre cartão de crédito (fatura) e cartão de benefício (VR/VA)
+async function abreCartao(){
+  const benefs=S.carteiras.filter(c=>c.beneficio);
+  const temCredito=S.cartoes.length>0;
+  // Sem cartão de benefício: fluxo de crédito direto (ele mesmo avisa se não houver cartão)
+  if(!benefs.length){abreCompra(null);return;}
+  // Tem benefício, mas nenhum cartão de crédito: não oferece crédito
+  if(!temCredito){
+    if(benefs.length===1){gastarNoBeneficio(benefs[0].id);return;} // só 1 VR -> direto
+    const esc=await dlgEscolhaCartao(benefs,false);                // vários VR -> escolhe qual
+    if(!esc)return;
+    gastarNoBeneficio(esc.replace(/^__b_/,''));
+    return;
+  }
+  // Tem crédito + benefício: pergunta normal
+  const esc=await dlgEscolhaCartao(benefs,true);
+  if(!esc)return;
+  if(esc==='__credito'){abreCompra(null);return;}
+  gastarNoBeneficio(esc.replace(/^__b_/,'')); // esc = '__b_'+id da carteira de benefício
+}
+function dlgEscolhaCartao(benefs,comCredito){
+  return new Promise(res=>{
+    _dlgResolve=res;
+    const opt=(emoji,tit,sub,val,bg)=>`<button onclick="dlgFecha('${val}')" style="background:var(--bg2);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;border:1px solid var(--bd);text-align:left;width:100%;margin-bottom:8px;">
+      <div style="width:36px;height:36px;border-radius:10px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">${emoji}</div>
+      <div><div style="font-size:14px;font-weight:500;color:var(--tit);">${tit}</div><div style="font-size:11px;color:var(--ts);">${sub}</div></div>
+    </button>`;
+    const sub=comCredito?'Esse gasto foi no crédito ou no VR/VA?':'Em qual cartão de benefício foi?';
+    let h=`<div class="sh-handle"></div><div class="sh-tit">Gasto no cartão</div>
+      <div class="sh-sub">${sub}</div>`;
+    if(comCredito)h+=opt('💳','Cartão de crédito','Entra na fatura, não no saldo agora','__credito','var(--chip2)');
+    benefs.forEach(c=>{h+=opt('🍽️',c.nome,'Sai do saldo do benefício','__b_'+c.id,'var(--vg)');});
+    h+=`<button class="btn-canc" style="width:100%;margin-top:6px;" onclick="dlgFecha(null)">Cancelar</button>`;
+    $('dlg-box').innerHTML=h;
+    $('dlg-ov').classList.add('aberto');
+  });
 }
 function abreCompra(editId){
   S.compraEditId=editId||null;
