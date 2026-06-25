@@ -1658,12 +1658,13 @@ function animaValor(el,novo){
 function abreLanc(dia,editId,presetCart){
   S.editId=editId||null;
   if(!editId&&presetCart){
+    const cw=S.carteiras.find(c=>c.id===presetCart);
     $('sh-lanc-tit').textContent='Gastar no cartão';
     setTipo('saida');
     $('l-val').value='';$('l-desc').value='';
     $('l-dia').value=dia||(S.mes===HJM&&S.ano===HJA?HJD:'');
     $('btn-del').style.display='none';
-    renderCartSel(presetCart);
+    renderCartSel(presetCart,!!(cw&&cw.beneficio)); // se for benefício, dropdown só mostra VR/VA
     popularCategSel('l-categ',null,'saida');
     $('sh-lanc').classList.add('aberto');
     return;
@@ -1692,8 +1693,9 @@ function abreLanc(dia,editId,presetCart){
   $('sh-lanc').classList.add('aberto');
 }
 
-function renderCartSel(selId){
-  $('l-cart').innerHTML=S.carteiras.map(c=>optBanco(c,selId)).join('');
+function renderCartSel(selId,onlyBenef){
+  const lista=onlyBenef?S.carteiras.filter(c=>c.beneficio):S.carteiras;
+  $('l-cart').innerHTML=lista.map(c=>optBanco(c,selId)).join('');
 }
 
 function setTipo(t){
@@ -2940,32 +2942,25 @@ async function abreCartao(){
   const temCredito=S.cartoes.length>0;
   // Sem cartão de benefício: fluxo de crédito direto (ele mesmo avisa se não houver cartão)
   if(!benefs.length){abreCompra(null);return;}
-  // Tem benefício, mas nenhum cartão de crédito: não oferece crédito
-  if(!temCredito){
-    if(benefs.length===1){gastarNoBeneficio(benefs[0].id);return;} // só 1 VR -> direto
-    const esc=await dlgEscolhaCartao(benefs,false);                // vários VR -> escolhe qual
-    if(!esc)return;
-    gastarNoBeneficio(esc.replace(/^__b_/,''));
-    return;
-  }
-  // Tem crédito + benefício: pergunta normal
-  const esc=await dlgEscolhaCartao(benefs,true);
+  // Tem benefício, mas nenhum cartão de crédito: vai direto pro VR (sem pergunta)
+  if(!temCredito){gastarNoBeneficio(benefs[0].id);return;}
+  // Tem crédito + benefício: pergunta só crédito ou VR/VA
+  const esc=await dlgEscolhaCartao();
   if(!esc)return;
   if(esc==='__credito'){abreCompra(null);return;}
-  gastarNoBeneficio(esc.replace(/^__b_/,'')); // esc = '__b_'+id da carteira de benefício
+  gastarNoBeneficio(benefs[0].id); // abre a planilha; o dropdown lista só os VR/VA
 }
-function dlgEscolhaCartao(benefs,comCredito){
+function dlgEscolhaCartao(){
   return new Promise(res=>{
     _dlgResolve=res;
     const opt=(emoji,tit,sub,val,bg)=>`<button onclick="dlgFecha('${val}')" style="background:var(--bg2);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;border:1px solid var(--bd);text-align:left;width:100%;margin-bottom:8px;">
       <div style="width:36px;height:36px;border-radius:10px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">${emoji}</div>
       <div><div style="font-size:14px;font-weight:500;color:var(--tit);">${tit}</div><div style="font-size:11px;color:var(--ts);">${sub}</div></div>
     </button>`;
-    const sub=comCredito?'Esse gasto foi no crédito ou no VR/VA?':'Em qual cartão de benefício foi?';
     let h=`<div class="sh-handle"></div><div class="sh-tit">Gasto no cartão</div>
-      <div class="sh-sub">${sub}</div>`;
-    if(comCredito)h+=opt('💳','Cartão de crédito','Entra na fatura, não no saldo agora','__credito','var(--chip2)');
-    benefs.forEach(c=>{h+=opt('🍽️',c.nome,'Sai do saldo do benefício','__b_'+c.id,'var(--vg)');});
+      <div class="sh-sub">Esse gasto foi no crédito ou no VR/VA?</div>
+      ${opt('💳','Cartão de crédito','Entra na fatura, não no saldo agora','__credito','var(--chip2)')}
+      ${opt('🍽️','VR / VA (benefício)','Sai do saldo do benefício, você escolhe qual','__vr','var(--vg)')}`;
     h+=`<button class="btn-canc" style="width:100%;margin-top:6px;" onclick="dlgFecha(null)">Cancelar</button>`;
     $('dlg-box').innerHTML=h;
     $('dlg-ov').classList.add('aberto');
