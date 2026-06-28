@@ -121,6 +121,8 @@ input,select{outline:none;font-family:inherit;}
 .tl-item-val{font-size:13px;font-weight:500;}
 .tl-item-val.pos{color:var(--v);}
 .tl-item-val.neg{color:var(--r);}
+.tl-item-val.benef{color:var(--ts);}
+.tl-item-val.info{color:var(--ts);}
 .tl-tag{font-size:9px;font-weight:700;color:var(--ts);background:var(--bd);border-radius:4px;padding:1px 4px;margin-left:4px;}
 
 /* RODAPÉ */
@@ -1393,6 +1395,14 @@ function comprasDaFatura(cartaoId,mes,ano){
     return c.mes_fatura===mes&&c.ano_fatura===ano;
   });
 }
+// Compras que caem num dia (apenas para EXIBIR na timeline; o dinheiro sai pela fatura, não aqui)
+function comprasDoDia(d,m,a){
+  return S.compras.filter(c=>{
+    if(parseInt(c.dia)!==d)return false;
+    if(c.recorrente){const ini=c.ano_fatura*100+c.mes_fatura;return ini<=(a*100+(m+1));}
+    return c.mes_fatura===m+1&&c.ano_fatura===a;
+  });
+}
 function valorFatura(cartaoId,mes,ano){
   const edit=faturaEdit(cartaoId,mes,ano);
   if(edit)return parseFloat(edit.valor);
@@ -1485,7 +1495,7 @@ function render(){
   rFim.className='rodape-val'+(sfim<0?' neg':'');
 
   // Timeline
-  const dm=S.lancs.filter(l=>l.mes===m+1&&l.ano===a&&!ehBenef(l.carteira_id));
+  const dm=S.lancs.filter(l=>l.mes===m+1&&l.ano===a); // inclui benefício (marcado VR/VA; saldoDia já o exclui do dinheiro real)
   const fixesMes=fixosDoMes(m,a).filter(f=>!ehBenef(f.carteira_id));
   const faturasMes=faturasDoMes(m,a);
 
@@ -1506,7 +1516,8 @@ function render(){
     const dLancs=dm.filter(l=>l.dia===d);
     const dFixos=fixesMes.filter(f=>diaNoMes(fixoDiaEff(f),m,a)===d);
     const dFaturas=faturasMes.filter(f=>f.dia===d&&!f.paga);
-    const temItem=dLancs.length||dFixos.length||dFaturas.length;
+    const dCompras=comprasDoDia(d,m,a);
+    const temItem=dLancs.length||dFixos.length||dFaturas.length||dCompras.length;
     const saldo=saldoDia(d,m,a);
     const isNeg=saldo<0;
     const diaNome=DIAS[new Date(a,m,d).getDay()];
@@ -1554,6 +1565,20 @@ function render(){
       </div>`;
     });
 
+    dCompras.forEach(cp=>{
+      const cart=S.cartoes.find(c=>c.id===cp.cartao_id);
+      const cat=nomeCateg(cp.categoria_id);
+      const tagTxt=cp.recorrente?'assinatura':(cp.parcelas>1?`cartão ${cp.parcela_atual}/${cp.parcelas}`:'cartão');
+      const sub=[cart?cart.nome:'Cartão',cat].filter(Boolean).join(' · ');
+      h+=`<div class="tl-item" onclick="event.stopPropagation();abreCompra('${cp.id}')">
+        <div class="tl-item-info">
+          <div class="tl-item-nome">${cp.descricao} <span class="tl-tag">${tagTxt}</span></div>
+          <div class="tl-item-sub">${sub} · entra na fatura</div>
+        </div>
+        <div class="tl-item-val info">-R$${brl(cp.valor)}</div>
+      </div>`;
+    });
+
     dFixos.forEach(f=>{
       const isEnt=f.tipo==='entrada';
       const cart=S.carteiras.find(c=>c.id===f.carteira_id);
@@ -1582,15 +1607,18 @@ function render(){
 
     dLancs.forEach(l=>{
       const isEnt=l.tipo==='entrada';
+      const benef=ehBenef(l.carteira_id);
       const cart=S.carteiras.find(c=>c.id===l.carteira_id);
       const cat=nomeCateg(l.categoria_id);
       const sub=[cart?cart.nome:null,cat].filter(Boolean).join(' · ');
+      const tag=benef?` <span class="tl-tag">VR/VA</span>`:'';
+      const valCls=benef?'benef':(isEnt?'pos':'neg');
       h+=`<div class="tl-item" onclick="event.stopPropagation();abreLanc(${d},'${l.id}')">
         <div class="tl-item-info">
-          <div class="tl-item-nome">${l.descricao}</div>
+          <div class="tl-item-nome">${l.descricao}${tag}</div>
           ${sub?`<div class="tl-item-sub">${sub}</div>`:''}
         </div>
-        <div class="tl-item-val ${isEnt?'pos':'neg'}">${isEnt?'+':'-'}R$${brl(l.valor)}</div>
+        <div class="tl-item-val ${valCls}">${isEnt?'+':'-'}R$${brl(l.valor)}</div>
       </div>`;
     });
 
@@ -1809,6 +1837,24 @@ function pedirEscopoFixo(acao){
 }
 
 function fechaModalEscopo(){$('modal-escopo').classList.remove('aberto');}
+
+// Seletor de escopo reutilizável (recarga, parcelas...). Retorna 'mes'|'frente'|'todos'|null
+let _escopoRes=null;
+function dlgEscopo(opts){
+  return new Promise(res=>{
+    _escopoRes=res;
+    const b=(esc,ico,txt)=>`<button onclick="escolheEscopo('${esc}')" style="padding:14px;border-radius:12px;background:var(--bg3);color:var(--tm);font-size:14px;font-weight:600;border:1px solid var(--bd);text-align:left;width:100%;margin-bottom:8px;">${ico} ${txt}</button>`;
+    const h=`<div class="sh-handle"></div><div class="sh-tit">${opts.titulo||'Aplicar a quais meses?'}</div>
+      <div style="margin-top:14px;">
+        ${b('mes','📅',opts.mes||'Só este mês')}
+        ${b('frente','➡️',opts.frente||'Daqui pra frente')}
+        ${b('todos','🔁',opts.todos||'Todos os meses')}
+        <button onclick="escolheEscopo('')" style="padding:14px;border-radius:12px;background:transparent;color:var(--ts);font-size:14px;font-weight:600;border:none;width:100%;">Cancelar</button>
+      </div>`;
+    $('dlg-box').innerHTML=h;$('dlg-ov').classList.add('aberto');
+  });
+}
+function escolheEscopo(v){$('dlg-ov').classList.remove('aberto');if(_escopoRes){const r=_escopoRes;_escopoRes=null;r(v||null);}}
 
 function confirmaEscopoFixo(escopo){
   _escopoLock=Date.now();           // arma a trava antes de fechar
@@ -2528,6 +2574,77 @@ async function novoBeneficio(){
   await carrega();renderCartoes();render();if($('content-carteiras').style.display!=='none')renderCarteiras();toast('✓ Cartão de benefício criado');
 }
 
+// ── RECARGA MANUAL (benefício) ──
+// Primeira ocorrência da recarga automática que ainda NÃO passou (p/ pular ao antecipar)
+function proximaRecargaOcorrencia(rec){
+  let im=HJM,ia=HJA;
+  for(let i=0;i<24;i++){
+    const occ=fixosDoMes(im,ia).find(f=>f.id===rec.id);
+    if(occ){
+      const diaEff=diaNoMes(fixoDiaEff(occ),im,ia);
+      const passou=(ia===HJA&&im===HJM&&diaEff<HJD);
+      if(!passou)return {mes:im+1,ano:ia};
+    }
+    im++;if(im>11){im=0;ia++;}
+  }
+  return null;
+}
+let _recCard=null,_recModo=null;
+function abreRecarga(cardId,modo){
+  const card=S.carteiras.find(c=>c.id===cardId);if(!card)return;
+  const rec=S.fixos.find(fx=>fx.carteira_id===cardId&&fx.tipo==='entrada'&&fx.ativo!==false);
+  _recCard=cardId;_recModo=modo;
+  const antecipar=modo==='antecipar';
+  const prox=antecipar&&rec?proximaRecargaOcorrencia(rec):null;
+  const aviso=antecipar
+    ? (prox?`<div style="display:flex;gap:8px;background:var(--chip1);border:0.5px solid #4a3f15;border-radius:10px;padding:10px 11px;margin-top:8px;"><span style="color:#ffd66e;font-size:15px;flex-shrink:0;">⚠️</span><div style="font-size:11px;color:#d9c98a;line-height:1.45;">Substitui a recarga automática de <strong>${MESES[prox.mes-1]}</strong>. Não soma — conta uma vez só.</div></div>`
+            : `<div style="font-size:11px;color:var(--ts);margin-top:8px;">Sem recarga automática pendente: isso entra como recarga avulsa.</div>`)
+    : `<div style="font-size:11px;color:var(--ts);margin-top:8px;">Entra por cima do saldo, além da recarga normal do mês.</div>`;
+  const h=`<div class="sh-handle"></div><div class="sh-tit">${antecipar?'Caiu a recarga':'Recarga extra'}</div>
+    <div class="sh-sub">${card.nome} · entra no saldo do cartão no dia informado.</div>
+    <div class="sh-lbl">Valor (R$)</div>
+    <input class="sh-inp" id="rec-val" type="number" inputmode="decimal" placeholder="Ex: 300" value="${rec?rec.valor:''}"/>
+    <div class="sh-lbl">Dia que caiu</div>
+    <input class="sh-inp" id="rec-dia" type="number" min="1" max="31" inputmode="numeric" value="${HJD}"/>
+    ${aviso}
+    <div id="rec-err" style="color:var(--r);font-size:11px;margin-top:8px;display:none;"></div>
+    <div class="sh-actions">
+      <button class="btn-canc" onclick="fechaRecarga()">Cancelar</button>
+      <button class="btn-salv" onclick="confirmaRecarga()">Confirmar</button>
+    </div>`;
+  $('dlg-box').innerHTML=h;$('dlg-ov').classList.add('aberto');
+}
+function fechaRecarga(){$('dlg-ov').classList.remove('aberto');_recCard=null;_recModo=null;}
+function recErr(msg){const e=$('rec-err');if(e){e.textContent=msg;e.style.display='block';}}
+async function confirmaRecarga(){
+  const cardId=_recCard,modo=_recModo;
+  const card=S.carteiras.find(c=>c.id===cardId);if(!card)return;
+  let val=parseFloat(($('rec-val').value||'').toString().replace(',','.'));
+  const dia=parseInt($('rec-dia').value);
+  if(!val||val<=0)return recErr('Informe quanto caiu de recarga.');
+  const maxDia=new Date(HJA,HJM+1,0).getDate();
+  if(!dia||dia<1||dia>maxDia)return recErr(`Dia inválido: este mês vai do dia 1 ao ${maxDia}.`);
+  val=Math.abs(val);
+  const rec=S.fixos.find(fx=>fx.carteira_id===cardId&&fx.tipo==='entrada'&&fx.ativo!==false);
+  const catId=rec?rec.categoria_id:((S.categorias.find(c=>c.nome==='Benefício / Auxílio'&&(c.tipo||'saida')==='entrada')||{}).id||null);
+  // 1) entrada no cartão, no dia real
+  await db.from('lancamentos').insert({
+    user_id:S.user.id,descricao:modo==='antecipar'?('Recarga '+card.nome):('Recarga extra '+card.nome),
+    valor:val,tipo:'entrada',dia,mes:HJM+1,ano:HJA,carteira_id:cardId,categoria_id:catId
+  });
+  // 2) antecipou → pula a próxima recarga automática (anti-duplicado: nunca vira o dobro)
+  if(modo==='antecipar'&&rec){
+    const prox=proximaRecargaOcorrencia(rec);
+    if(prox){
+      const jaPulado=S.excecoes.some(e=>e.fixo_id===rec.id&&e.mes===prox.mes&&e.ano===prox.ano&&e.tipo==='apagado');
+      if(!jaPulado)await db.from('fixos_excecoes').insert({user_id:S.user.id,fixo_id:rec.id,mes:prox.mes,ano:prox.ano,tipo:'apagado'});
+    }
+  }
+  fechaRecarga();
+  await carrega();render();if($('content-cartoes').style.display!=='none')renderCartoes();if($('content-carteiras').style.display!=='none')renderCarteiras();
+  toast(modo==='antecipar'?'✓ Recarga registrada':'✓ Recarga extra adicionada');
+}
+
 async function editarBeneficio(id){
   const cart=S.carteiras.find(c=>c.id===id);
   if(!cart)return;
@@ -2535,12 +2652,12 @@ async function editarBeneficio(id){
   if(!r)return;
   const rec=S.fixos.find(fx=>fx.carteira_id===id&&fx.tipo==='entrada');
   if(r==='__DELETE'){
-    const ok=await dlgConfirm('Apagar cartão de benefício?',`"${cart.nome}" e a recarga mensal serão removidas.`,'Apagar',true);
+    const ok=await dlgConfirm('Apagar cartão de benefício?',`"${cart.nome}", a recarga mensal e os gastos lançados nela serão removidos.`,'Apagar',true);
     if(!ok)return;
     const fids=S.fixos.filter(fx=>fx.carteira_id===id).map(fx=>fx.id);
     for(const fid of fids){await db.from('fixos_excecoes').delete().eq('fixo_id',fid);}
     await db.from('fixos').delete().eq('carteira_id',id);
-    await db.from('lancamentos').update({carteira_id:null}).eq('carteira_id',id);
+    await db.from('lancamentos').delete().eq('carteira_id',id);
     await db.from('carteiras').delete().eq('id',id);
     await carrega();renderCartoes();render();if($('content-carteiras').style.display!=='none')renderCarteiras();
     toast('Cartão de benefício apagado');
@@ -2559,7 +2676,28 @@ async function editarBeneficio(id){
   await db.from('carteiras').update({nome:r.nome,cor:r.cor,cor_letra:r.cor_letra,letra:r.letra,saldo:parseFloat(r.saldo)||0}).eq('id',id);
   const recarga=parseFloat(r.recarga)||0,dia=parseInt(r.dia)||1;
   if(rec){
-    if(recarga>0){await db.from('fixos').update({valor:recarga,dia,mes_fim:null,ano_fim:null}).eq('id',rec.id);}
+    if(recarga>0){
+      const valorMudou=Math.abs(parseFloat(rec.valor)-recarga)>0.001;
+      if(valorMudou){
+        const escopo=await dlgEscopo({titulo:'Mudar a recarga em quais meses?',mes:'Só este mês',frente:'Deste mês em diante',todos:'Todos os meses'});
+        if(escopo){
+          const rMes=HJM+1,rAno=HJA;
+          if(escopo==='todos'){
+            await db.from('fixos').update({valor:recarga,dia,mes_fim:null,ano_fim:null}).eq('id',rec.id);
+          } else if(escopo==='frente'){
+            await db.from('fixos').update({mes_fim:rMes,ano_fim:rAno}).eq('id',rec.id);
+            await db.from('fixos').insert({user_id:S.user.id,descricao:rec.descricao,valor:recarga,tipo:'entrada',dia,carteira_id:id,parcelas:null,categoria_id:rec.categoria_id,mes_inicio:rMes,ano_inicio:rAno,ativo:true});
+          } else { // mes
+            const ex=S.excecoes.find(e=>e.fixo_id===rec.id&&e.mes===rMes&&e.ano===rAno&&e.tipo==='editado');
+            const dd={user_id:S.user.id,fixo_id:rec.id,mes:rMes,ano:rAno,tipo:'editado',valor:recarga,descricao:rec.descricao,carteira_id:id,categoria_id:rec.categoria_id};
+            if(ex)await db.from('fixos_excecoes').update(dd).eq('id',ex.id); else await db.from('fixos_excecoes').insert(dd);
+          }
+        }
+        // escopo cancelado: mantém valor antigo (não mexe na recarga)
+      } else {
+        await db.from('fixos').update({dia,mes_fim:null,ano_fim:null}).eq('id',rec.id);
+      }
+    }
     else{await db.from('fixos').delete().eq('id',rec.id);}
   } else if(recarga>0){
     const catRec=S.categorias.find(c=>c.nome==='Benefício / Auxílio'&&(c.tipo||'saida')==='entrada');
@@ -2582,15 +2720,15 @@ async function editarCarteira(id){
   const r=await dlgBanco('Editar carteira',cart);
   if(!r)return;
   if(r==='__DELETE'){
-    const msg=cart.beneficio?`"${cart.nome}" e a recarga mensal dela serão removidas.`:`"${cart.nome}" será removida. Lançamentos e fixos dela ficam sem banco.`;
+    const msg=cart.beneficio?`"${cart.nome}", a recarga mensal e os gastos lançados nela serão removidos.`:`"${cart.nome}" será removida. Lançamentos e fixos dela ficam sem banco.`;
     const ok=await dlgConfirm('Apagar carteira?',msg,'Apagar',true);
     if(!ok)return;
     if(cart.beneficio){
-      // Cartão de benefício: apaga a recarga e os fixos dele de vez (não deixa renda órfã)
+      // Cartão de benefício: apaga recarga, fixos E gastos dele (nunca foram dinheiro real → não podem virar dívida ao remover)
       const fids=S.fixos.filter(fx=>fx.carteira_id===id).map(fx=>fx.id);
       for(const fid of fids){await db.from('fixos_excecoes').delete().eq('fixo_id',fid);}
       await db.from('fixos').delete().eq('carteira_id',id);
-      await db.from('lancamentos').update({carteira_id:null}).eq('carteira_id',id);
+      await db.from('lancamentos').delete().eq('carteira_id',id);
     } else {
       await db.from('lancamentos').update({carteira_id:null}).eq('carteira_id',id);
       await db.from('fixos').update({carteira_id:null}).eq('carteira_id',id);
@@ -2678,6 +2816,10 @@ function renderCartoes(){
           <span style="font-size:12px;color:var(--ts);">Saldo disponível ›</span>
           <span style="font-size:16px;font-weight:700;color:var(--v);">R$ ${brl(saldo)}</span>
         </div>
+        ${recAtiva?`<div style="display:flex;gap:8px;margin-top:10px;">
+          <button onclick="event.stopPropagation();abreRecarga('${c.id}','antecipar')" style="flex:1.5;border:none;border-radius:9px;padding:9px;background:var(--v);color:#04210f;font-size:12px;font-weight:700;">Caiu a recarga</button>
+          <button onclick="event.stopPropagation();abreRecarga('${c.id}','extra')" style="flex:1;border:0.5px solid var(--bd);border-radius:9px;padding:9px;background:var(--bg3);color:var(--tm);font-size:12px;font-weight:700;">+ Extra</button>
+        </div>`:''}
       </div>`;
     });
   }
@@ -2987,6 +3129,7 @@ function abreCompra(editId){
     S.compraFaturaMes=cp.mes_fatura;
     S.compraFaturaAno=cp.ano_fatura;
     setCompraTipo(cp.recorrente?'assinatura':(cp.parcelas>1?'parcelado':'avista'));
+    S.compraGrupo=(cp.parcelas>1&&!cp.recorrente)?{cartao_id:cp.cartao_id,descricao:cp.descricao,parcelas:cp.parcelas,dia:cp.dia,mes:cp.mes_fatura,ano:cp.ano_fatura}:null;
     $('btn-del-compra').style.display='block';
   } else {
     $('sh-compra-tit').textContent='Nova compra no cartão';
@@ -2997,6 +3140,7 @@ function abreCompra(editId){
     S.compraFaturaMes=S.mes+1;
     S.compraFaturaAno=S.ano;
     setCompraTipo('avista');
+    S.compraGrupo=null;
     $('btn-del-compra').style.display='none';
   }
   atualizaFaturaLabel();
@@ -3026,7 +3170,21 @@ async function salvaCompra(){
   if(!desc||!val||!dia||!cartaoId)return dlgInfo('Faltou algo','Preencha valor, descrição, dia e cartão.');
 
   if(S.compraEditId){
-    await db.from('compras_cartao').update({descricao:desc,valor:val,dia,cartao_id:cartaoId,mes_fatura:S.compraFaturaMes,ano_fatura:S.compraFaturaAno,categoria_id:categId,recorrente:tipo==='assinatura'}).eq('id',S.compraEditId);
+    if(S.compraGrupo&&S.compraGrupo.parcelas>1){
+      const escopo=await dlgEscopo({titulo:'Aplicar a quais parcelas?',mes:'Só esta parcela',frente:'Desta pra frente',todos:'Todas as parcelas'});
+      if(!escopo)return; // cancelou
+      const g=S.compraGrupo;
+      const upd={descricao:desc,valor:val,dia,cartao_id:cartaoId,categoria_id:categId};
+      if(escopo==='mes'){
+        await db.from('compras_cartao').update(upd).eq('id',S.compraEditId);
+      } else {
+        const sibs=S.compras.filter(c=>!c.recorrente&&c.cartao_id===g.cartao_id&&c.descricao===g.descricao&&c.parcelas===g.parcelas&&parseInt(c.dia)===parseInt(g.dia));
+        const alvo=escopo==='frente'?sibs.filter(c=>(c.ano_fatura*100+c.mes_fatura)>=(g.ano*100+g.mes)):sibs;
+        for(const c of alvo){await db.from('compras_cartao').update(upd).eq('id',c.id);}
+      }
+    } else {
+      await db.from('compras_cartao').update({descricao:desc,valor:val,dia,cartao_id:cartaoId,mes_fatura:S.compraFaturaMes,ano_fatura:S.compraFaturaAno,categoria_id:categId,recorrente:tipo==='assinatura'}).eq('id',S.compraEditId);
+    }
   } else if(tipo==='assinatura'){
     // Assinatura: 1 linha recorrente que entra em toda fatura a partir do mês escolhido
     await db.from('compras_cartao').insert({user_id:S.user.id,cartao_id:cartaoId,descricao:desc,valor:val,dia,mes_fatura:S.compraFaturaMes,ano_fatura:S.compraFaturaAno,parcelas:1,parcela_atual:1,categoria_id:categId,recorrente:true});
