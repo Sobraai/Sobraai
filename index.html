@@ -488,12 +488,19 @@ body.claro{background:radial-gradient(140% 60% at 50% -10%, rgba(22,163,74,.07) 
 .cgrp.open .cgrp-arw{transform:rotate(90deg);}
 .cgrp-body{display:none;border-top:0.5px solid var(--bd);}
 .cgrp.open .cgrp-body{display:block;}
-@media(min-width:820px){
-  .rc-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:18px;align-items:start;}
-  .rc-col-main,.rc-col-side{min-width:0;}
-  .rc-col-side>.resumo{margin-top:0;}
-  .rc-col-side>.sec-tit:first-child{margin-top:0;}
-}
+.rsec{background:var(--bg2);border:0.5px solid var(--bd);border-radius:14px;margin-bottom:8px;overflow:hidden;}
+.rsec-head{display:flex;align-items:center;gap:11px;padding:14px 16px;cursor:pointer;}
+.rsec-ic{font-size:18px;width:22px;text-align:center;flex-shrink:0;}
+.rsec-tit{font-size:14px;font-weight:600;color:var(--tit);}
+.rsec-sub{font-size:11px;color:var(--ts);margin-top:2px;}
+.rsec-val{font-size:14px;font-weight:700;}
+.rsec-val.neg{color:var(--r);}
+.rsec-val.pos{color:var(--v);}
+.rsec-arw{color:var(--ts);font-size:18px;transition:transform .2s;flex-shrink:0;}
+.rsec.open .rsec-arw{transform:rotate(90deg);}
+.rsec-body{display:none;border-top:0.5px solid var(--bd);padding:8px 14px 12px;}
+.rsec.open .rsec-body{display:block;}
+.rsec-body .resumo{margin:0;}
 .conta-row.sub{background:transparent;border:none;border-bottom:0.5px solid rgba(255,255,255,.05);border-radius:0;margin:0;padding:11px 14px 11px 46px;}
 .cgrp-body .conta-row.sub:last-child{border-bottom:none;}
 /* ═══ v4.0: tipo de compra, emoji picker ═══ */
@@ -2364,7 +2371,7 @@ function renderCarteiras(){
   };
   const secaoContas=(items,isReceber)=>{
     if(!items.length)return '';
-    let hh=`<div class="conta-grp-lbl">${isReceber?'A receber':'A pagar'} (${items.length})</div>`;
+    let hh='';
     agrupaContas(items).forEach(g=>{
       if(g.items.length===1){ hh+=rowPend(g.items[0],g.cat.emoji); return; }
       const body=g.items.map(it=>rowPend(it,null)).join('');
@@ -2380,18 +2387,21 @@ function renderCarteiras(){
     });
     return hh;
   };
-  h+=`<div class="rc-grid"><div class="rc-col rc-col-main">`;
-  if(pend.length||feito.length){
-    h+=`<div class="sec-tit">Contas ${isFut?'previstas':'do mês'}</div>`;
-    h+=secaoContas(pend.filter(it=>it.isEnt),true);
-    h+=secaoContas(pend.filter(it=>!it.isEnt),false);
-    if(feito.length){
-      h+=`<div class="conta-grp-lbl" style="margin-top:14px;">Já confirmadas (${feito.length})</div>`;
-      h+=feito.map(linhaFeito).join('');
-    }
-  }
+  const rsec=(open,ico,tit,sub,val,valCls,body)=>`<div class="rsec${open?' open':''}">
+    <div class="rsec-head" onclick="this.parentElement.classList.toggle('open')">
+      <span class="rsec-ic">${ico}</span>
+      <div style="flex:1;min-width:0;"><div class="rsec-tit">${tit}</div>${sub?`<div class="rsec-sub">${sub}</div>`:''}</div>
+      ${val?`<span class="rsec-val ${valCls||''}">${val}</span>`:''}
+      <span class="rsec-arw">›</span>
+    </div>
+    <div class="rsec-body">${body}</div>
+  </div>`;
+  const itPagar=pend.filter(it=>!it.isEnt), itReceber=pend.filter(it=>it.isEnt);
+  const totPagar=itPagar.reduce((s,it)=>s+it.val,0), totReceber=itReceber.reduce((s,it)=>s+it.val,0);
+  if(itPagar.length) h+=rsec(true,'💸','A pagar',`${itPagar.length} ${itPagar.length===1?'conta':'contas'}`,`-R$ ${brl(totPagar)}`,'neg',secaoContas(itPagar,false));
+  if(itReceber.length) h+=rsec(false,'💰','A receber',`${itReceber.length} ${itReceber.length===1?'entrada':'entradas'}`,`+R$ ${brl(totReceber)}`,'pos',secaoContas(itReceber,true));
+  if(feito.length) h+=rsec(false,'✅','Já paguei',`${feito.length} ${feito.length===1?'conta':'contas'}`,'','',feito.map(linhaFeito).join(''));
 
-  h+=`</div><div class="rc-col rc-col-side">`;
   // ── PRA ONDE FOI: categorias ──
   // Lançamentos de pagamento de fatura são representados pelas COMPRAS (abaixo), então excluímos aqui
   const faturaLancIds=new Set(S.faturasEdit.filter(e=>e.lancamento_id).map(e=>e.lancamento_id));
@@ -2407,30 +2417,28 @@ function renderCarteiras(){
     else addCat(c.categoria_id,v);
   }));
   const sobrou=entrou-saiu;
-  const tituloPrev=isCur?'Como seu mês vai terminar':`Como ${MESES[m]} vai terminar`;
-  h+=`<div class="resumo" style="margin-top:20px;">
-    <div class="resumo-head"><span class="resumo-head-tit">${tituloPrev}</span><span class="resumo-head-tag">previsão</span></div>
+  let fbody=`<div class="resumo">
     <div class="resumo-linha"><span class="resumo-lbl">Vai entrar</span><span class="resumo-val pos">+R$ ${brl(entrou)}</span></div>
     <div class="resumo-linha"><span class="resumo-lbl">Vai sair</span><span class="resumo-val neg">-R$ ${brl(saiu)}</span></div>
     <div class="resumo-linha resumo-sobra"><span class="resumo-lbl">${sobrou<0?'Vai faltar':'Vai sobrar'}</span><span class="resumo-val ${sobrou<0?'neg':'pos'}">${sobrou<0?'-':''}R$ ${brl(Math.abs(sobrou))}</span></div>`;
   const cats=Object.entries(porCateg).sort((x,y)=>y[1]-x[1]);
   if(cats.length){
-    h+=`<div class="resumo-sub">Pra onde foi</div>`;
+    fbody+=`<div class="resumo-sub">Pra onde foi</div>`;
     cats.forEach(([k,v])=>{
       let nome;
       if(k==='__sem')nome='<span style="color:var(--ts)">Sem categoria</span>';
       else if(k==='__cartao_inicial')nome='💳 Gasto inicial do cartão';
       else nome=nomeCateg(k)||'<span style="color:var(--ts)">Sem categoria</span>';
       const pct=saiu>0?Math.round(v/saiu*100):0;
-      h+=`<div class="resumo-cat"><div class="resumo-cat-top"><span>${nome}</span><span class="resumo-val neg">R$ ${brl(v)}</span></div><div class="resumo-bar"><div class="resumo-bar-fill" style="width:${pct}%"></div></div></div>`;
+      fbody+=`<div class="resumo-cat"><div class="resumo-cat-top"><span>${nome}</span><span class="resumo-val neg">R$ ${brl(v)}</span></div><div class="resumo-bar"><div class="resumo-bar-fill" style="width:${pct}%"></div></div></div>`;
     });
   }
-  h+=`</div>`;
-  h+=`<div class="resumo-hint" onclick="abaApp('mes')">Quer ver gasto por gasto? <span>Abrir o Mês ›</span></div>`;
+  fbody+=`</div>`;
+  h+=rsec(false,'📊','Como o mês vai terminar',`${sobrou<0?'vai faltar':'vai sobrar'} R$ ${brl(Math.abs(sobrou))}`,'','',fbody);
 
   // ── MEUS BANCOS ──
-  h+=`<div class="sec-tit" style="margin-top:20px;">Meus bancos</div>`;
-  h+=reais.map(cart=>{
+  const totBancos=reais.reduce((s,c)=>s+(isCur?saldoCarteira(c.id):saldoCarteira(c.id,ultimoDia,m,a)),0);
+  const bbody=reais.map(cart=>{
     const hoje=saldoCarteira(cart.id);
     const fimMes=saldoCarteira(cart.id,ultimoDia,m,a);
     const ini=saldoCarteira(cart.id,1,m,a);
@@ -2449,7 +2457,8 @@ function renderCarteiras(){
       </div>
       <span style="color:var(--ts);font-size:18px;">›</span>
     </div>`;}).join('');
-  h+=`</div></div>`;
+  h+=rsec(false,'🏦','Meus bancos',`${reais.length} ${reais.length===1?'conta':'contas'}`,fmt(totBancos),'',bbody);
+  h+=`<div class="resumo-hint" onclick="abaApp('mes')">Quer ver gasto por gasto? <span>Abrir o Mês ›</span></div>`;
   lista.innerHTML=h;
 }
 
