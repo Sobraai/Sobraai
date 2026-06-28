@@ -488,6 +488,12 @@ body.claro{background:radial-gradient(140% 60% at 50% -10%, rgba(22,163,74,.07) 
 .cgrp.open .cgrp-arw{transform:rotate(90deg);}
 .cgrp-body{display:none;border-top:0.5px solid var(--bd);}
 .cgrp.open .cgrp-body{display:block;}
+@media(min-width:820px){
+  .rc-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:18px;align-items:start;}
+  .rc-col-main,.rc-col-side{min-width:0;}
+  .rc-col-side>.resumo{margin-top:0;}
+  .rc-col-side>.sec-tit:first-child{margin-top:0;}
+}
 .conta-row.sub{background:transparent;border:none;border-bottom:0.5px solid rgba(255,255,255,.05);border-radius:0;margin:0;padding:11px 14px 11px 46px;}
 .cgrp-body .conta-row.sub:last-child{border-bottom:none;}
 /* ═══ v4.0: tipo de compra, emoji picker ═══ */
@@ -1395,12 +1401,21 @@ function comprasDaFatura(cartaoId,mes,ano){
     return c.mes_fatura===mes&&c.ano_fatura===ano;
   });
 }
+// Mês real da compra: se o dia é maior que hoje, ela foi no mês passado (não dá pra comprar no futuro)
+function mesCompraDeDia(dia){
+  let m=HJM,a=HJA;
+  if(dia>HJD){m--;if(m<0){m=11;a--;}}
+  return {mes:m+1,ano:a};
+}
 // Compras que caem num dia (apenas para EXIBIR na timeline; o dinheiro sai pela fatura, não aqui)
 function comprasDoDia(d,m,a){
   return S.compras.filter(c=>{
     if(parseInt(c.dia)!==d)return false;
     if(c.recorrente){const ini=c.ano_fatura*100+c.mes_fatura;return ini<=(a*100+(m+1));}
-    return c.mes_fatura===m+1&&c.ano_fatura===a;
+    if(c.parcelas>1){return c.mes_fatura===m+1&&c.ano_fatura===a;} // cada parcela no mês da SUA fatura
+    // à vista: mostra no mês da COMPRA (não no mês da fatura)
+    const cm=c.mes_compra||c.mes_fatura, ca=c.ano_compra||c.ano_fatura;
+    return cm===m+1&&ca===a;
   });
 }
 function valorFatura(cartaoId,mes,ano){
@@ -1573,7 +1588,7 @@ function render(){
       h+=`<div class="tl-item" onclick="event.stopPropagation();abreCompra('${cp.id}')">
         <div class="tl-item-info">
           <div class="tl-item-nome">${cp.descricao} <span class="tl-tag">${tagTxt}</span></div>
-          <div class="tl-item-sub">${sub} · entra na fatura</div>
+          <div class="tl-item-sub">${sub} · entra na fatura de ${MESES[cp.mes_fatura-1]}</div>
         </div>
         <div class="tl-item-val info">-R$${brl(cp.valor)}</div>
       </div>`;
@@ -2365,6 +2380,7 @@ function renderCarteiras(){
     });
     return hh;
   };
+  h+=`<div class="rc-grid"><div class="rc-col rc-col-main">`;
   if(pend.length||feito.length){
     h+=`<div class="sec-tit">Contas ${isFut?'previstas':'do mês'}</div>`;
     h+=secaoContas(pend.filter(it=>it.isEnt),true);
@@ -2375,6 +2391,7 @@ function renderCarteiras(){
     }
   }
 
+  h+=`</div><div class="rc-col rc-col-side">`;
   // ── PRA ONDE FOI: categorias ──
   // Lançamentos de pagamento de fatura são representados pelas COMPRAS (abaixo), então excluímos aqui
   const faturaLancIds=new Set(S.faturasEdit.filter(e=>e.lancamento_id).map(e=>e.lancamento_id));
@@ -2432,6 +2449,7 @@ function renderCarteiras(){
       </div>
       <span style="color:var(--ts);font-size:18px;">›</span>
     </div>`;}).join('');
+  h+=`</div></div>`;
   lista.innerHTML=h;
 }
 
@@ -3187,18 +3205,21 @@ async function salvaCompra(){
     }
   } else if(tipo==='assinatura'){
     // Assinatura: 1 linha recorrente que entra em toda fatura a partir do mês escolhido
-    await db.from('compras_cartao').insert({user_id:S.user.id,cartao_id:cartaoId,descricao:desc,valor:val,dia,mes_fatura:S.compraFaturaMes,ano_fatura:S.compraFaturaAno,parcelas:1,parcela_atual:1,categoria_id:categId,recorrente:true});
+    const mc=mesCompraDeDia(dia);
+    await db.from('compras_cartao').insert({user_id:S.user.id,cartao_id:cartaoId,descricao:desc,valor:val,dia,mes_fatura:S.compraFaturaMes,ano_fatura:S.compraFaturaAno,mes_compra:mc.mes,ano_compra:mc.ano,parcelas:1,parcela_atual:1,categoria_id:categId,recorrente:true});
   } else if(parcelas>1){
     const valorParcela=val/parcelas;
+    const mc=mesCompraDeDia(dia);
     let m=S.compraFaturaMes-1,a=S.compraFaturaAno;
     const rows=[];
     for(let p=0;p<parcelas;p++){
-      rows.push({user_id:S.user.id,cartao_id:cartaoId,descricao:desc,valor:valorParcela,dia,mes_fatura:m+1,ano_fatura:a,parcelas,parcela_atual:p+1,categoria_id:categId,recorrente:false});
+      rows.push({user_id:S.user.id,cartao_id:cartaoId,descricao:desc,valor:valorParcela,dia,mes_fatura:m+1,ano_fatura:a,mes_compra:mc.mes,ano_compra:mc.ano,parcelas,parcela_atual:p+1,categoria_id:categId,recorrente:false});
       m++;if(m>11){m=0;a++;}
     }
     await db.from('compras_cartao').insert(rows);
   } else {
-    await db.from('compras_cartao').insert({user_id:S.user.id,cartao_id:cartaoId,descricao:desc,valor:val,dia,mes_fatura:S.compraFaturaMes,ano_fatura:S.compraFaturaAno,parcelas:1,parcela_atual:1,categoria_id:categId,recorrente:false});
+    const mc=mesCompraDeDia(dia);
+    await db.from('compras_cartao').insert({user_id:S.user.id,cartao_id:cartaoId,descricao:desc,valor:val,dia,mes_fatura:S.compraFaturaMes,ano_fatura:S.compraFaturaAno,mes_compra:mc.mes,ano_compra:mc.ano,parcelas:1,parcela_atual:1,categoria_id:categId,recorrente:false});
   }
   await carrega();fechaShCompra();
   if(S.faturaView)renderFaturaDetalhe();else renderCartoes();
