@@ -2294,10 +2294,10 @@ function renderCarteiras(){
     </div>`;
   } else {
     h+=`<div class="cart-hero">
-      <div class="cart-hero-lbl">${isFut?'Previsão p/ o fim de '+MESES[m]:'Saldo no fim de '+MESES[m]}</div>
-      <div class="cart-hero-val">${fmt(totalFim)}</div>
+      <div class="cart-hero-lbl">No começo de ${MESES[m]}</div>
+      <div class="cart-hero-val">${fmt(totalIni)}</div>
       <div class="ch-pills">
-        <div class="ch-pill"><div class="ch-pill-lbl">No começo do mês</div><div class="ch-pill-val">${fmt(totalIni)}</div></div>
+        <div class="ch-pill"><div class="ch-pill-lbl">${isFut?'Previsão p/ o fim':'Saldo no fim'}</div><div class="ch-pill-val">${fmt(totalFim)}</div></div>
         ${benefs.length>0?`<div class="ch-pill"><div class="ch-pill-lbl">🍽️ Benefícios</div><div class="ch-pill-val">${fmt(benefFim)}</div></div>`:''}
       </div>
     </div>`;
