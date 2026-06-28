@@ -2410,7 +2410,6 @@ function renderCarteiras(){
   </div>`;
   const itPagar=pend.filter(it=>!it.isEnt), itReceber=pend.filter(it=>it.isEnt);
   const totPagar=itPagar.reduce((s,it)=>s+it.val,0), totReceber=itReceber.reduce((s,it)=>s+it.val,0);
-  h+=`<div class="rsec-hint">👆 Toque em cada menu para abrir</div>`;
   if(itPagar.length) h+=rsec(false,'💸','A pagar',`${itPagar.length} ${itPagar.length===1?'conta':'contas'}`,`-R$ ${brl(totPagar)}`,'neg',secaoContas(itPagar,false));
   if(itReceber.length) h+=rsec(false,'💰','A receber',`${itReceber.length} ${itReceber.length===1?'entrada':'entradas'}`,`+R$ ${brl(totReceber)}`,'pos',secaoContas(itReceber,true));
   if(feito.length) h+=rsec(false,'✅','Já paguei',`${feito.length} ${feito.length===1?'conta':'contas'}`,'','',feito.map(linhaFeito).join(''));
