@@ -771,6 +771,8 @@ const S={
   fixoEditId:null,
   fixoMesRef:null,
   fixoAnoRef:null,
+  fixoMesAlvo:null,
+  fixoAnoAlvo:null,
   cartoes:[],
   compras:[],
   faturasEdit:[],
@@ -1800,6 +1802,8 @@ function abreFixo(editId){
   S.fixoEditId=editId||null;
   S.fixoMesRef=S.mes+1;
   S.fixoAnoRef=S.ano;
+  S.fixoMesAlvo=S.mes+1;
+  S.fixoAnoAlvo=S.ano;
   renderFixoCartSel(null);
   if(editId){
     // Busca no fixo original (não na versão editada do mês)
@@ -1823,6 +1827,8 @@ function abreFixo(editId){
     popularCategSel('f-categ',(excEdit&&excEdit.categoria_id!==undefined)?excEdit.categoria_id:(fReal.categoria_id||null),fReal.tipo);
     $('btn-del-fixo').style.display='block';
     var _fe=document.getElementById('fixo-escopo');if(_fe)_fe.style.display='block';
+    var _fm=document.getElementById('f-mes-wrap');if(_fm)_fm.style.display=fReal.parcelas?'none':'block';
+    fixoMesLabel();
   } else {
     $('sh-fixo-tit').textContent='Novo fixo / parcelado';
     setFixoTipo('saida');setFixoRep('fixo');
@@ -1830,8 +1836,15 @@ function abreFixo(editId){
     popularCategSel('f-categ',null,S.fixoTipo);
     $('btn-del-fixo').style.display='none';
     var _fe2=document.getElementById('fixo-escopo');if(_fe2)_fe2.style.display='none';
+    var _fm2=document.getElementById('f-mes-wrap');if(_fm2)_fm2.style.display='none';
   }
   $('sh-fixo').classList.add('aberto');
+}
+function fixoMesLabel(){const e=document.getElementById('f-mes-lbl');if(e)e.textContent=`${MESES[S.fixoMesAlvo-1]} ${S.fixoAnoAlvo}`;}
+function fixoMesStep(d){
+  let m=S.fixoMesAlvo-1+d,a=S.fixoAnoAlvo;
+  while(m<0){m+=12;a--;}while(m>11){m-=12;a++;}
+  S.fixoMesAlvo=m+1;S.fixoAnoAlvo=a;fixoMesLabel();
 }
 
 function renderFixoCartSel(selId){
@@ -1850,6 +1863,7 @@ function setFixoRep(r){
   $('f-tp-fixo').className='sh-radio'+(r==='fixo'?' on':'');
   $('f-tp-parc').className='sh-radio'+(r==='parcelado'?' on':'');
   $('f-parc-wrap').style.display=r==='parcelado'?'block':'none';
+  var _fm=document.getElementById('f-mes-wrap');if(_fm)_fm.style.display=(r==='fixo'&&S.fixoEditId)?'block':'none';
 }
 
 function fechaShFixo(){$('sh-fixo').classList.remove('aberto');}
@@ -1921,10 +1935,22 @@ async function salvaFixoEscopo(escopo){
       mes_inicio:S.fixoMesRef,ano_inicio:S.fixoAnoRef,ativo:true,
     });
   } else {
-    const excExist=S.excecoes.find(e=>e.fixo_id===S.fixoEditId&&e.mes===S.fixoMesRef&&e.ano===S.fixoAnoRef&&e.tipo==='editado');
-    const excDados={user_id:S.user.id,fixo_id:S.fixoEditId,mes:S.fixoMesRef,ano:S.fixoAnoRef,tipo:'editado',valor:val,descricao:desc,carteira_id:cartId,categoria_id:categId};
-    if(excExist){await db.from('fixos_excecoes').update(excDados).eq('id',excExist.id);}
-    else{await db.from('fixos_excecoes').insert(excDados);}
+    const fReal=S.fixos.find(x=>x.id===S.fixoEditId)||{};
+    const movDia=dia!==fReal.dia;
+    const movMes=(S.fixoMesAlvo!==S.fixoMesRef)||(S.fixoAnoAlvo!==S.fixoAnoRef);
+    const moveu=!fReal.parcelas&&(movDia||movMes);
+    if(moveu){
+      // pula a ocorrência do mês de origem (não conta lá)
+      const jaPulado=S.excecoes.some(e=>e.fixo_id===S.fixoEditId&&e.mes===S.fixoMesRef&&e.ano===S.fixoAnoRef&&e.tipo==='apagado');
+      if(!jaPulado)await db.from('fixos_excecoes').insert({user_id:S.user.id,fixo_id:S.fixoEditId,mes:S.fixoMesRef,ano:S.fixoAnoRef,tipo:'apagado'});
+      // recria como ocorrência ÚNICA no mês/dia de destino (uma vez só)
+      await db.from('fixos').insert({user_id:S.user.id,descricao:desc,valor:val,tipo:S.fixoTipo,dia,carteira_id:cartId,parcelas:null,categoria_id:categId,mes_inicio:S.fixoMesAlvo,ano_inicio:S.fixoAnoAlvo,mes_fim:S.fixoMesAlvo,ano_fim:S.fixoAnoAlvo,ativo:true});
+    } else {
+      const excExist=S.excecoes.find(e=>e.fixo_id===S.fixoEditId&&e.mes===S.fixoMesRef&&e.ano===S.fixoAnoRef&&e.tipo==='editado');
+      const excDados={user_id:S.user.id,fixo_id:S.fixoEditId,mes:S.fixoMesRef,ano:S.fixoAnoRef,tipo:'editado',valor:val,descricao:desc,carteira_id:cartId,categoria_id:categId};
+      if(excExist){await db.from('fixos_excecoes').update(excDados).eq('id',excExist.id);}
+      else{await db.from('fixos_excecoes').insert(excDados);}
+    }
   }
   await carrega();fechaShFixo();render();toast('✓ Fixo salvo');
 }
@@ -3316,6 +3342,15 @@ async function limparDados(){
     <select class="sh-sel" id="f-categ" onchange="categChange(this)"></select>
     <div class="sh-lbl">Dia do mês</div>
     <input class="sh-inp" type="number" id="f-dia" placeholder="Ex: 5" min="1" max="31" inputmode="numeric"/>
+    <div id="f-mes-wrap" style="display:none;">
+      <div class="sh-lbl">Mês desta conta</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button type="button" onclick="fixoMesStep(-1)" style="width:42px;height:42px;border-radius:11px;border:1px solid var(--bd);background:var(--bg3);color:var(--tit);font-size:20px;flex-shrink:0;">‹</button>
+        <div id="f-mes-lbl" style="flex:1;text-align:center;font-weight:700;color:var(--tit);font-size:15px;">—</div>
+        <button type="button" onclick="fixoMesStep(1)" style="width:42px;height:42px;border-radius:11px;border:1px solid var(--bd);background:var(--bg3);color:var(--tit);font-size:20px;flex-shrink:0;">›</button>
+      </div>
+      <div style="font-size:11px;color:var(--ts);margin-top:6px;line-height:1.4;">Mudar o mês move a conta <strong>só quando você escolher "Só este mês"</strong>.</div>
+    </div>
     <div class="sh-lbl">Tipo</div>
     <div class="sh-radio-row">
       <button class="sh-radio on" id="f-tp-fixo" onclick="setFixoRep('fixo')">🔁 Fixo</button>
