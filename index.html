@@ -659,7 +659,7 @@ body.claro{background:radial-gradient(140% 60% at 50% -10%, rgba(22,163,74,.07) 
           <div style="flex:1;"><div style="font-size:14px;color:var(--ts);">Sair</div></div>
         </div>
       </div>
-      <div style="text-align:center;font-size:11px;color:var(--ts);margin:18px 0 6px;">SobraAí <strong>v4.7</strong></div>
+      <div style="text-align:center;font-size:11px;color:var(--ts);margin:18px 0 6px;">SobraAí <strong>v4.7.1</strong></div>
     </div>
   </div>
   <div class="rodape" id="rodape-saldo">
@@ -1435,8 +1435,17 @@ function mesCompraDeDia(dia){
 function comprasDoDia(d,m,a){
   return S.compras.filter(c=>{
     if(parseInt(c.dia)!==d)return false;
-    if(c.recorrente){const ini=c.ano_fatura*100+c.mes_fatura;return ini<=(a*100+(m+1));}
-    if(c.parcelas>1){return c.mes_fatura===m+1&&c.ano_fatura===a;} // cada parcela no mês da SUA fatura
+    if(c.recorrente){
+      const bm=c.mes_compra||c.mes_fatura,ba=c.ano_compra||c.ano_fatura;
+      return (ba*100+bm)<=(a*100+(m+1));
+    }
+    if(c.parcelas>1){
+      if(!c.mes_compra)return c.mes_fatura===m+1&&c.ano_fatura===a; // compra antiga: comportamento antigo
+      // parcela k aparece no mês da compra + (k-1): a 1ª no dia real da compra, as demais mês a mês
+      let dm=(c.mes_compra-1)+(c.parcela_atual-1),da=c.ano_compra;
+      da+=Math.floor(dm/12);dm=dm%12;
+      return dm===m&&da===a;
+    }
     // à vista: mostra no mês da COMPRA (não no mês da fatura)
     const cm=c.mes_compra||c.mes_fatura, ca=c.ano_compra||c.ano_fatura;
     return cm===m+1&&ca===a;
