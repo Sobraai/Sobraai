@@ -1673,12 +1673,22 @@ function render(){
   }
 }
 
+// Primeiro mês com algum dado do usuário (piso da navegação)
+function mesMinimo(){
+  let m=HJM,a=HJA;
+  const chk=(mm,aa)=>{if(mm>=0&&aa&&(aa<a||(aa===a&&mm<m))){m=mm;a=aa;}};
+  S.lancs.forEach(l=>chk(l.mes-1,l.ano));
+  S.fixos.forEach(f=>chk(f.mes_inicio-1,f.ano_inicio));
+  S.compras.forEach(c=>chk((c.mes_compra||c.mes_fatura)-1,c.ano_compra||c.ano_fatura));
+  return {m,a};
+}
 function navMes(d){
   let nm=S.mes+d,na=S.ano;
   if(nm>11){nm=0;na++;}
   if(nm<0){nm=11;na--;}
-  // Não permite navegar antes do mês atual (início do app)
-  if(na*100+nm < HJA*100+HJM)return;
+  // Não navega antes do primeiro mês com dados (mas mês passado com histórico é liberado)
+  const piso=mesMinimo();
+  if(na*100+nm < piso.a*100+piso.m)return;
   S.mes=nm;S.ano=na;
   if(nm===HJM&&na===HJA)S._scrollHoje=true;
   render();
@@ -2813,7 +2823,8 @@ async function editarCarteira(id){
 function navMesCartoes(d){
   let m=S.cartoesMes+d,a=S.cartoesAno;
   if(m>11){m=0;a++;}if(m<0){m=11;a--;}
-  if(a*100+m < HJA*100+HJM)return;
+  const piso=mesMinimo();
+  if(a*100+m < piso.a*100+piso.m)return;
   S.cartoesMes=m;S.cartoesAno=a;
   renderCartoes();
 }
@@ -3054,6 +3065,7 @@ function renderFaturaDetalhe(){
     h+=`<button onclick="desfazerPagamento('${cartaoId}',${mes},${ano})" style="background:transparent;border:1px solid var(--bd);border-radius:10px;padding:10px;width:100%;color:var(--ts);font-size:12px;margin-bottom:8px;">Desfazer pagamento</button>`;
   } else {
     if(vTotal>0)h+=`<button onclick="pagarFatura('${cartaoId}',${mes},${ano})" style="background:var(--v);border-radius:10px;padding:12px;width:100%;color:var(--onv);font-size:14px;font-weight:700;margin-bottom:8px;">💸 Pagar fatura</button>`;
+    if(vTotal>0)h+=`<button onclick="adiarFatura('${cartaoId}',${mes},${ano})" style="background:var(--bg3);border-radius:10px;padding:10px;width:100%;color:var(--tm);font-size:13px;font-weight:600;margin-bottom:8px;">📅 Adiar p/ outro mês</button>`;
     if(edit)h+=`<div style="font-size:11px;color:#fbbf24;margin-bottom:8px;">⚠ Valor editado manualmente (compras somam R$ ${brl(comprasFat.reduce((s,c)=>s+parseFloat(c.valor),0))})</div>`;
     h+=`<button onclick="editarValorFatura('${cartaoId}',${mes},${ano})" style="background:var(--bg3);border-radius:10px;padding:10px;width:100%;color:var(--tm);font-size:13px;font-weight:600;margin-bottom:8px;">✏️ Editar valor da fatura</button>`;
     if(edit)h+=`<button onclick="resetarFatura('${cartaoId}',${mes},${ano})" style="background:transparent;border:1px solid var(--bd);border-radius:10px;padding:10px;width:100%;color:var(--ts);font-size:12px;margin-bottom:8px;">Voltar ao valor automático</button>`;
@@ -3122,6 +3134,32 @@ async function pagarFatura(cartaoId,mes,ano){
   if(edit)await db.from('faturas_edit').update({pago:true,valor:valorPago,lancamento_id:lid}).eq('id',edit.id);
   else await db.from('faturas_edit').insert({user_id:S.user.id,cartao_id:cartaoId,mes,ano,valor:valorPago,pago:true,lancamento_id:lid});
   await carrega();refreshAposFatura();toast('💸 Fatura paga!');
+}
+
+async function adiarFatura(cartaoId,mes,ano){
+  const ct=S.cartoes.find(x=>x.id===cartaoId);if(!ct)return;
+  if(!S.carteiras.length){await dlgInfo('Sem bancos','Cadastre um banco para registrar o pagamento.');return;}
+  const v=valorFatura(cartaoId,mes,ano);
+  const opts=[];
+  for(let i=1;i<=3;i++){let mm=mes-1+i,aa=ano;while(mm>11){mm-=12;aa++;}opts.push({v:`${mm+1}-${aa}`,t:`${MESES[mm]} ${aa}`});}
+  const r=await dlgForm('Adiar fatura '+ct.nome,[
+    {id:'banco',label:'Vai sair de qual banco?',type:'select',value:ct.carteira_id||S.carteiras[0].id,options:S.carteiras.map(x=>({v:x.id,t:x.nome}))},
+    {id:'valor',label:'Valor da fatura (R$)',type:'number',value:v},
+    {id:'mesalvo',label:'Pagar em qual mês?',type:'select',value:opts[0].v,options:opts},
+    {id:'dia',label:'Dia do pagamento',type:'number',value:1},
+  ]);
+  if(!r||r==='__DELETE')return;
+  const valorPago=parseFloat(r.valor)||0;
+  if(valorPago<=0){await dlgInfo('Valor inválido','Informe o valor da fatura.');return;}
+  const partes=r.mesalvo.split('-').map(Number);const tm=partes[0],ta=partes[1];
+  const maxDia=new Date(ta,tm,0).getDate();
+  let dia=parseInt(r.dia)||1;if(dia<1)dia=1;if(dia>maxDia)dia=maxDia;
+  const{data}=await db.from('lancamentos').insert({user_id:S.user.id,descricao:'Fatura '+ct.nome+' (adiada)',valor:valorPago,tipo:'saida',dia,mes:tm,ano:ta,carteira_id:r.banco}).select();
+  const lid=data&&data[0]?data[0].id:null;
+  const edit=faturaEdit(cartaoId,mes,ano);
+  if(edit)await db.from('faturas_edit').update({pago:true,valor:valorPago,lancamento_id:lid}).eq('id',edit.id);
+  else await db.from('faturas_edit').insert({user_id:S.user.id,cartao_id:cartaoId,mes,ano,valor:valorPago,pago:true,lancamento_id:lid});
+  await carrega();refreshAposFatura();toast('📅 Fatura adiada para '+MESES[tm-1]);
 }
 
 async function desfazerPagamento(cartaoId,mes,ano){
@@ -3248,7 +3286,9 @@ async function salvaCompra(){
         for(const c of alvo){await db.from('compras_cartao').update(upd).eq('id',c.id);}
       }
     } else {
-      await db.from('compras_cartao').update({descricao:desc,valor:val,dia,cartao_id:cartaoId,mes_fatura:S.compraFaturaMes,ano_fatura:S.compraFaturaAno,categoria_id:categId,recorrente:tipo==='assinatura'}).eq('id',S.compraEditId);
+      const cpAtual=S.compras.find(c=>c.id===S.compraEditId)||{};
+      const mcBk=cpAtual.mes_compra?{}:(()=>{const mc=mesCompraDeDia(dia);return{mes_compra:mc.mes,ano_compra:mc.ano};})();
+      await db.from('compras_cartao').update({descricao:desc,valor:val,dia,cartao_id:cartaoId,mes_fatura:S.compraFaturaMes,ano_fatura:S.compraFaturaAno,categoria_id:categId,recorrente:tipo==='assinatura',...mcBk}).eq('id',S.compraEditId);
     }
   } else if(tipo==='assinatura'){
     // Assinatura: 1 linha recorrente que entra em toda fatura a partir do mês escolhido
