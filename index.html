@@ -127,7 +127,7 @@ input,select{outline:none;font-family:inherit;}
 .tl-item-val.info{color:var(--ts);}
 .tl-tag{font-size:9px;font-weight:700;color:var(--ts);background:var(--bd);border-radius:4px;padding:1px 4px;margin-left:4px;}
 .tl-tag.card{background:#ffd66e;color:#8a6d00;}
-.tl-row.passado{opacity:.55;}
+.tl-row.passado{opacity:1;}
 .tl-body.hoje{background:var(--bg2);border:1.5px solid var(--v);border-radius:14px;padding:4px 12px 8px;margin:2px 0 8px;}
 .tl-chip-hoje{display:inline-block;font-size:9px;font-weight:800;background:var(--v);color:var(--onv);border-radius:5px;padding:1.5px 7px;margin-right:7px;vertical-align:1px;}
 
@@ -659,6 +659,7 @@ body.claro{background:radial-gradient(140% 60% at 50% -10%, rgba(22,163,74,.07) 
           <div style="flex:1;"><div style="font-size:14px;color:var(--ts);">Sair</div></div>
         </div>
       </div>
+      <div style="text-align:center;font-size:11px;color:var(--ts);margin:18px 0 6px;">SobraAí <strong>v4.7</strong></div>
     </div>
   </div>
   <div class="rodape" id="rodape-saldo">
@@ -1961,8 +1962,9 @@ async function salvaFixoEscopo(escopo){
       // pula a ocorrência do mês de origem (não conta lá)
       const jaPulado=S.excecoes.some(e=>e.fixo_id===S.fixoEditId&&e.mes===S.fixoMesRef&&e.ano===S.fixoAnoRef&&e.tipo==='apagado');
       if(!jaPulado)await db.from('fixos_excecoes').insert({user_id:S.user.id,fixo_id:S.fixoEditId,mes:S.fixoMesRef,ano:S.fixoAnoRef,tipo:'apagado'});
-      // recria como ocorrência ÚNICA no mês/dia de destino (uma vez só)
-      await db.from('fixos').insert({user_id:S.user.id,descricao:desc,valor:val,tipo:S.fixoTipo,dia,carteira_id:cartId,parcelas:null,categoria_id:categId,mes_inicio:S.fixoMesAlvo,ano_inicio:S.fixoAnoAlvo,mes_fim:S.fixoMesAlvo,ano_fim:S.fixoAnoAlvo,ativo:true});
+      // recria como ocorrência ÚNICA no mês/dia de destino (mes_fim é EXCLUSIVO → fim = destino+1)
+      let fimM=S.fixoMesAlvo+1,fimA=S.fixoAnoAlvo;if(fimM>12){fimM=1;fimA++;}
+      await db.from('fixos').insert({user_id:S.user.id,descricao:desc,valor:val,tipo:S.fixoTipo,dia,carteira_id:cartId,parcelas:null,categoria_id:categId,mes_inicio:S.fixoMesAlvo,ano_inicio:S.fixoAnoAlvo,mes_fim:fimM,ano_fim:fimA,ativo:true});
     } else {
       const excExist=S.excecoes.find(e=>e.fixo_id===S.fixoEditId&&e.mes===S.fixoMesRef&&e.ano===S.fixoAnoRef&&e.tipo==='editado');
       const excDados={user_id:S.user.id,fixo_id:S.fixoEditId,mes:S.fixoMesRef,ano:S.fixoAnoRef,tipo:'editado',valor:val,descricao:desc,carteira_id:cartId,categoria_id:categId};
@@ -2844,70 +2846,57 @@ function renderCartoes(){
   const cm=S.cartoesMes,ca=S.cartoesAno;
   const isMesAtual=cm===HJM&&ca===HJA;
   let h=`<div style="padding:16px;">
-    <div style="font-size:20px;font-weight:700;color:var(--tit);margin-bottom:6px;">Cartões de crédito</div>
-    <div style="font-size:12px;color:var(--ts);margin-bottom:14px;">Compras entram na fatura. A fatura desconta do saldo no vencimento.</div>
-    <div style="display:flex;align-items:center;gap:8px;background:var(--bg2);border-radius:12px;padding:8px;margin-bottom:14px;border:0.5px solid var(--bd);">
+    <div style="display:flex;align-items:center;gap:8px;background:var(--bg2);border-radius:12px;padding:8px;margin-bottom:16px;border:0.5px solid var(--bd);">
       <button onclick="navMesCartoes(-1)" style="width:34px;height:34px;border-radius:9px;background:var(--bg3);color:var(--v);font-size:16px;">‹</button>
-      <div style="flex:1;text-align:center;">
-        <div style="font-size:14px;font-weight:700;color:var(--tit);">${MESES[cm]} ${ca}</div>
-        <div style="font-size:10px;color:var(--ts);">${isMesAtual?'faturas deste mês':'faturas futuras'}</div>
-      </div>
+      <div style="flex:1;text-align:center;font-size:14px;font-weight:700;color:var(--tit);">${MESES[cm]} ${ca}</div>
       <button onclick="navMesCartoes(1)" style="width:34px;height:34px;border-radius:9px;background:var(--bg3);color:var(--v);font-size:16px;">›</button>
-    </div>`;
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--ts);letter-spacing:.07em;margin:0 2px 8px;">CRÉDITO</div>`;
   if(!S.cartoes.length){
-    h+='<div style="text-align:center;padding:30px 16px;color:var(--ts);font-size:13px;">Nenhum cartão ainda.<br>Adicione seu primeiro cartão.</div>';
+    h+='<div style="text-align:center;padding:24px 16px;color:var(--ts);font-size:13px;">Nenhum cartão ainda. Compras entram na fatura, e a fatura desconta do saldo no vencimento.</div>';
+    h+='<button class="btn-add" onclick="novoCartao()">+ Adicionar cartão</button>';
   } else {
     S.cartoes.forEach(ct=>{
       const v=valorFatura(ct.id,cm+1,ca);
-      h+=`<div style="background:var(--bg2);border-radius:14px;padding:14px 16px;margin-bottom:8px;border:0.5px solid var(--bd);">
-        <div style="display:flex;align-items:center;gap:12px;">
-          ${badgeBanco(ct,46)}
-          <div style="flex:1;">
-            <div style="font-size:14px;font-weight:500;color:var(--tit);">${ct.nome}</div>
-            <div style="font-size:11px;color:var(--ts);margin-top:2px;">Vence dia ${ct.dia_vencimento}</div>
-          </div>
-          <button onclick="editarCartao('${ct.id}')" style="background:var(--bg3);border-radius:8px;padding:6px 12px;color:var(--ts);font-size:12px;">Editar</button>
+      h+=`<div onclick="verFatura('${ct.id}',${cm+1},${ca})" style="background:var(--bg2);border-radius:14px;padding:13px 14px;margin-bottom:8px;border:0.5px solid var(--bd);cursor:pointer;display:flex;align-items:center;gap:12px;">
+        ${badgeBanco(ct,42)}
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:600;color:var(--tit);">${ct.nome}</div>
+          <div style="font-size:11px;color:var(--ts);margin-top:2px;">fatura vence dia ${ct.dia_vencimento}</div>
         </div>
-        <div onclick="verFatura('${ct.id}',${cm+1},${ca})" style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--bd);display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
-          <span style="font-size:12px;color:var(--ts);">Fatura de ${MESES[cm]}</span>
-          <span style="font-size:14px;font-weight:600;color:${faturaPaga(ct.id,cm+1,ca)?'var(--v)':v>0?'var(--r)':'var(--ts)'};">${faturaPaga(ct.id,cm+1,ca)?'✓ paga · ':''}R$ ${brl(v)} ›</span>
+        <div style="text-align:right;">
+          <div style="font-size:15px;font-weight:700;color:${faturaPaga(ct.id,cm+1,ca)?'var(--v)':v>0?'var(--r)':'var(--ts)'};">${faturaPaga(ct.id,cm+1,ca)?'✓ paga':'R$ '+brl(v)}</div>
+          <div style="font-size:10.5px;color:var(--ts);">ver fatura ›</div>
         </div>
       </div>`;
     });
+    h+='<div onclick="novoCartao()" style="text-align:center;font-size:12px;color:var(--ts);padding:6px 0 2px;cursor:pointer;">+ adicionar cartão</div>';
   }
-  h+='<button class="btn-add" onclick="novoCartao()" style="margin-top:8px;">+ Adicionar cartão</button>';
   // ── Cartões de benefício (VR/VA) ──
   const benefs=S.carteiras.filter(c=>c.beneficio);
-  h+=`<div style="font-size:20px;font-weight:700;color:var(--tit);margin:24px 0 6px;">Cartões de benefício</div>
-    <div style="font-size:12px;color:var(--ts);margin-bottom:14px;">VR, VA, Pluxe... saldo separado do seu dinheiro. Recarrega sozinho todo mês.</div>`;
+  h+=`<div style="font-size:11px;font-weight:700;color:var(--ts);letter-spacing:.07em;margin:20px 2px 8px;">BENEFÍCIO (VR / VA)</div>`;
   if(!benefs.length){
-    h+='<div style="text-align:center;padding:20px 16px;color:var(--ts);font-size:13px;">Nenhum cartão de benefício ainda.</div>';
+    h+='<div style="text-align:center;padding:20px 16px;color:var(--ts);font-size:13px;">Nenhum cartão de benefício ainda. VR/VA tem saldo separado do seu dinheiro e recarrega sozinho todo mês.</div>';
+    h+='<button class="btn-add" onclick="novoBeneficio()">+ Cartão de benefício (VR / VA)</button>';
   } else {
     benefs.forEach(c=>{
       const saldo=saldoCarteira(c.id);
       const rec=S.fixos.find(fx=>fx.carteira_id===c.id&&fx.tipo==='entrada'&&fx.ativo!==false);
       const recAtiva=rec&&!(rec.mes_fim&&rec.ano_fim&&(HJA*100+(HJM+1))>=(rec.ano_fim*100+rec.mes_fim));
-      h+=`<div style="background:var(--bg2);border-radius:14px;padding:14px 16px;margin-bottom:8px;border:0.5px solid var(--bd);cursor:pointer;" onclick="verBeneficio('${c.id}')">
+      h+=`<div style="background:var(--bg2);border-radius:14px;padding:13px 14px;margin-bottom:8px;border:0.5px solid var(--bd);cursor:pointer;" onclick="verBeneficio('${c.id}')">
         <div style="display:flex;align-items:center;gap:12px;">
-          ${badgeBanco(c,46)}
+          ${badgeBanco(c,42)}
           <div style="flex:1;min-width:0;">
             <div style="font-size:14px;font-weight:600;color:var(--tit);">${c.nome} <span class="cart-tag-benef">benefício</span></div>
-            <div style="font-size:11px;color:var(--ts);margin-top:2px;">${recAtiva?`Recarga R$ ${brl(rec.valor)} · dia ${rec.dia}`:'Sem recarga ativa'}</div>
+            <div style="font-size:11px;color:var(--ts);margin-top:2px;">${recAtiva?`recarga R$ ${brl(rec.valor)} · dia ${rec.dia} · detalhes ›`:'sem recarga ativa · detalhes ›'}</div>
           </div>
-          <button onclick="event.stopPropagation();editarBeneficio('${c.id}')" style="background:var(--bg3);border-radius:8px;padding:6px 12px;color:var(--ts);font-size:12px;">Editar</button>
+          <div style="font-size:17px;font-weight:700;color:var(--v);">R$ ${brl(saldo)}</div>
         </div>
-        <div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--bd);display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:12px;color:var(--ts);">Saldo disponível ›</span>
-          <span style="font-size:16px;font-weight:700;color:var(--v);">R$ ${brl(saldo)}</span>
-        </div>
-        ${recAtiva?`<div style="display:flex;gap:8px;margin-top:10px;">
-          <button onclick="event.stopPropagation();abreRecarga('${c.id}','antecipar')" style="flex:1.5;border:none;border-radius:9px;padding:9px;background:var(--v);color:#04210f;font-size:12px;font-weight:700;">Caiu a recarga</button>
-          <button onclick="event.stopPropagation();abreRecarga('${c.id}','extra')" style="flex:1;border:0.5px solid var(--bd);border-radius:9px;padding:9px;background:var(--bg3);color:var(--tm);font-size:12px;font-weight:700;">+ Extra</button>
-        </div>`:''}
+        ${recAtiva?`<button onclick="event.stopPropagation();abreRecarga('${c.id}','antecipar')" style="width:100%;margin-top:11px;border:none;border-radius:10px;padding:9px;background:var(--vg);color:var(--v);font-size:12px;font-weight:700;">Caiu a recarga</button>`:''}
       </div>`;
     });
+    h+='<div onclick="novoBeneficio()" style="text-align:center;font-size:12px;color:var(--ts);padding:6px 0 0;cursor:pointer;">+ adicionar benefício</div>';
   }
-  h+='<button class="btn-add" onclick="novoBeneficio()" style="margin-top:8px;">+ Cartão de benefício (VR / VA)</button>';
   h+='</div>';
   el.innerHTML=h;
 }
@@ -3026,12 +3015,16 @@ function renderBeneficioDetalhe(){
 
   let h=`<div style="padding:16px;">
     <button onclick="voltarDoBeneficio()" style="background:none;color:var(--v);font-size:14px;font-weight:600;margin-bottom:14px;">‹ Voltar</button>
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">${badgeBanco(c,48)}<div><div style="font-size:20px;font-weight:700;color:var(--tit);">${c.nome}</div><div style="font-size:11px;color:var(--ts);">${recAtiva?`Recarrega R$ ${brl(rec.valor)} todo dia ${rec.dia}`:'Sem recarga ativa'}</div></div></div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">${badgeBanco(c,48)}<div style="flex:1;"><div style="font-size:20px;font-weight:700;color:var(--tit);">${c.nome}</div><div style="font-size:11px;color:var(--ts);">${recAtiva?`Recarrega R$ ${brl(rec.valor)} todo dia ${rec.dia}`:'Sem recarga ativa'}</div></div><button onclick="editarBeneficio('${c.id}')" style="background:var(--bg3);border-radius:8px;padding:6px 12px;color:var(--ts);font-size:12px;">Editar</button></div>
     <div class="cart-hero" style="margin-bottom:16px;">
       <div class="cart-hero-lbl">Saldo disponível no cartão</div>
       <div class="cart-hero-val">R$ ${brl(saldo)}</div>
       <div class="cart-hero-fim">Dinheiro de benefício — separado do seu saldo do banco.</div>
     </div>
+    ${recAtiva?`<div style="display:flex;gap:8px;margin-bottom:8px;">
+      <button onclick="abreRecarga('${c.id}','antecipar')" style="flex:1.5;border:none;border-radius:10px;padding:10px;background:var(--v);color:var(--onv);font-size:13px;font-weight:700;">Caiu a recarga</button>
+      <button onclick="abreRecarga('${c.id}','extra')" style="flex:1;border:0.5px solid var(--bd);border-radius:10px;padding:10px;background:var(--bg3);color:var(--tm);font-size:13px;font-weight:700;">+ Extra</button>
+    </div>`:''}
     <button class="btn-add" onclick="gastarNoBeneficio('${c.id}')" style="margin-bottom:16px;">+ Gastar neste cartão</button>
     <div class="sec-tit">Extrato</div>`;
   if(!ext.length){
@@ -3058,7 +3051,7 @@ function renderFaturaDetalhe(){
   const pago=!!(edit&&edit.pago);
   let h=`<div style="padding:16px;">
     <button onclick="voltarCartoes()" style="background:none;color:var(--v);font-size:14px;padding:4px 0;margin-bottom:8px;">‹ Voltar aos cartões</button>
-    <div style="display:flex;align-items:center;gap:10px;">${badgeBanco(ct,40)}<div style="font-size:20px;font-weight:700;color:var(--tit);">Fatura ${ct.nome}</div></div>
+    <div style="display:flex;align-items:center;gap:10px;">${badgeBanco(ct,40)}<div style="flex:1;font-size:20px;font-weight:700;color:var(--tit);">Fatura ${ct.nome}</div><button onclick="editarCartao('${ct.id}')" style="background:var(--bg3);border-radius:8px;padding:6px 12px;color:var(--ts);font-size:12px;">Editar</button></div>
     <div style="display:flex;align-items:center;gap:8px;background:var(--bg2);border-radius:12px;padding:8px;margin:10px 0;border:0.5px solid var(--bd);">
       <button onclick="mudaFaturaView(-1)" style="width:34px;height:34px;border-radius:9px;background:var(--bg3);color:var(--v);font-size:16px;">‹</button>
       <div style="flex:1;text-align:center;">
