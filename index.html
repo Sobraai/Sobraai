@@ -128,6 +128,10 @@ input,select{outline:none;font-family:inherit;}
 .tl-tag{font-size:9px;font-weight:700;color:var(--ts);background:var(--bd);border-radius:4px;padding:1px 4px;margin-left:4px;}
 .tl-tag.card{background:#ffd66e;color:#8a6d00;}
 .tl-row.passado{opacity:1;}
+.tl-grip{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;color:var(--ts);opacity:.45;font-size:13px;padding:4px 6px 4px 2px;flex-shrink:0;letter-spacing:-1px;}
+.tl-item.arrastando{opacity:.35;}
+.drag-ghost{position:fixed;z-index:300;pointer-events:none;background:var(--bg3);border:1px solid var(--v);border-radius:12px;padding:10px 14px;font-size:13px;color:var(--tit);box-shadow:0 8px 30px rgba(0,0,0,.5);max-width:70vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tl-row.drop-alvo .tl-body{outline:1.5px solid var(--v);border-radius:16px;}
 .tl-body.hoje{background:var(--bg2);border:1.5px solid var(--v);border-radius:14px;padding:4px 12px 8px;margin:2px 0 8px;}
 .tl-chip-hoje{display:inline-block;font-size:9px;font-weight:800;background:var(--v);color:var(--onv);border-radius:5px;padding:1.5px 7px;margin-right:7px;vertical-align:1px;}
 
@@ -659,7 +663,7 @@ body.claro{background:radial-gradient(140% 60% at 50% -10%, rgba(22,163,74,.07) 
           <div style="flex:1;"><div style="font-size:14px;color:var(--ts);">Sair</div></div>
         </div>
       </div>
-      <div style="text-align:center;font-size:11px;color:var(--ts);margin:18px 0 6px;">SobraAí <strong>v4.7.1</strong></div>
+      <div style="text-align:center;font-size:11px;color:var(--ts);margin:18px 0 6px;">SobraAí <strong>v4.9</strong></div>
     </div>
   </div>
   <div class="rodape" id="rodape-saldo">
@@ -1421,7 +1425,10 @@ function comprasDaFatura(cartaoId,mes,ano){
   const ord=ano*100+mes;
   return S.compras.filter(c=>{
     if(c.cartao_id!==cartaoId)return false;
-    if(c.recorrente){const ini=c.ano_fatura*100+c.mes_fatura;return ini<=ord;}
+    if(c.recorrente){
+      if(c.mes_fim&&c.ano_fim&&ord>=(c.ano_fim*100+c.mes_fim))return false; // assinatura encerrada (fim exclusivo)
+      const ini=c.ano_fatura*100+c.mes_fatura;return ini<=ord;
+    }
     return c.mes_fatura===mes&&c.ano_fatura===ano;
   });
 }
@@ -1437,7 +1444,9 @@ function comprasDoDia(d,m,a){
     if(parseInt(c.dia)!==d)return false;
     if(c.recorrente){
       const bm=c.mes_compra||c.mes_fatura,ba=c.ano_compra||c.ano_fatura;
-      return (ba*100+bm)<=(a*100+(m+1));
+      const ord=a*100+(m+1);
+      if(c.mes_fim&&c.ano_fim&&ord>=(c.ano_fim*100+c.mes_fim))return false;
+      return (ba*100+bm)<=ord;
     }
     if(c.parcelas>1){
       if(!c.mes_compra)return c.mes_fatura===m+1&&c.ano_fatura===a; // compra antiga: comportamento antigo
@@ -1576,7 +1585,7 @@ function render(){
     // Dias sem lançamento: sempre mostrar
     if(!temItem){
       if(false)continue; // mostra todos
-      h+=`<div class="tl-row${isPassD?' passado':''}" id="tl-dia-${d}">
+      h+=`<div class="tl-row${isPassD?' passado':''}" id="tl-dia-${d}" data-dia="${d}">
         <div class="tl-line">
           <div class="tl-dot vazio${isHj?' hj':''}"></div>
           ${!isUltimo?'<div class="tl-seg"></div>':''}
@@ -1593,7 +1602,7 @@ function render(){
 
     // Dia com lançamentos
     const dotCls=isHj?'hj':isNeg?'neg':'';
-    h+=`<div class="tl-row${isPassD?' passado':''}">
+    h+=`<div class="tl-row${isPassD?' passado':''}" data-dia="${d}">
       <div class="tl-line">
         <div class="tl-dot ${dotCls}"></div>
         ${!isUltimo?'<div class="tl-seg"></div>':''}
@@ -1646,6 +1655,7 @@ function render(){
       const subTxt=sub.join(' · ');
       const check=mostraCheck?`<button class="fx-check ${pago?'on':''}" onclick="event.stopPropagation();${pago?`desmarcarFixo('${f.id}',${m+1},${a})`:`pagarFixo('${f.id}',${m+1},${a})`}">${pago?'✓':''}</button>`:'';
       h+=`<div class="tl-item${venceuSemPagar?' fx-vencido':''}">
+        ${(!pago&&!f.parcelas)?`<span class="tl-grip" data-drag="f:${f.id}" onclick="event.stopPropagation()">⠿</span>`:''}
         ${check}
         <div class="tl-item-info" onclick="event.stopPropagation();abreFixo('${f.id}')">
           <div class="tl-item-nome">${f.descricao} <span class="tl-tag">${tag}</span></div>
@@ -1664,6 +1674,7 @@ function render(){
       const tag=benef?` <span class="tl-tag">VR/VA</span>`:'';
       const valCls=benef?'benef':(isEnt?'pos':'neg');
       h+=`<div class="tl-item" onclick="event.stopPropagation();abreLanc(${d},'${l.id}')">
+        <span class="tl-grip" data-drag="l:${l.id}" onclick="event.stopPropagation()">⠿</span>
         <div class="tl-item-info">
           <div class="tl-item-nome">${l.descricao}${tag}</div>
           ${sub?`<div class="tl-item-sub">${sub}</div>`:''}
@@ -1711,6 +1722,94 @@ function navMes(d){
   if(nm===HJM&&na===HJA)S._scrollHoje=true;
   render();
   if($('content-carteiras').style.display!=='none')renderCarteiras();
+}
+
+// ── ARRASTAR ITENS ENTRE DIAS (edição rápida, pela alça ⠿) ──
+let _dg=null;
+function _dgLimpa(){
+  if(!_dg)return;
+  if(_dg.ghost)_dg.ghost.remove();
+  if(_dg.el)_dg.el.classList.remove('arrastando');
+  document.querySelectorAll('.tl-row.drop-alvo').forEach(r=>r.classList.remove('drop-alvo'));
+  _dg=null;
+}
+document.addEventListener('pointerdown',e=>{
+  const grip=e.target.closest?e.target.closest('[data-drag]'):null;
+  if(!grip)return;
+  const item=grip.closest('.tl-item'),row=grip.closest('[data-dia]');
+  if(!item||!row)return;
+  e.preventDefault();
+  const par=grip.dataset.drag.split(':');
+  _dg={tipo:par[0],id:par[1],el:item,diaOrigem:parseInt(row.dataset.dia),ghost:null,pid:e.pointerId};
+  try{grip.setPointerCapture(e.pointerId);}catch(_){}
+});
+document.addEventListener('pointermove',e=>{
+  if(!_dg||e.pointerId!==_dg.pid)return;
+  if(!_dg.ghost){
+    const g=document.createElement('div');g.className='drag-ghost';
+    const nm=_dg.el.querySelector('.tl-item-nome'),vl=_dg.el.querySelector('.tl-item-val');
+    g.textContent=((nm?nm.textContent:'')+' '+(vl?vl.textContent:'')).trim();
+    document.body.appendChild(g);_dg.ghost=g;_dg.el.classList.add('arrastando');
+  }
+  _dg.ghost.style.left=(e.clientX+12)+'px';
+  _dg.ghost.style.top=(e.clientY-14)+'px';
+  if(e.clientY<90)window.scrollBy(0,-14);
+  else if(e.clientY>window.innerHeight-90)window.scrollBy(0,14);
+  document.querySelectorAll('.tl-row.drop-alvo').forEach(r=>r.classList.remove('drop-alvo'));
+  const sob=document.elementFromPoint(e.clientX,e.clientY);
+  const rowAlvo=sob&&sob.closest?sob.closest('[data-dia]'):null;
+  if(rowAlvo&&parseInt(rowAlvo.dataset.dia)!==_dg.diaOrigem)rowAlvo.classList.add('drop-alvo');
+});
+document.addEventListener('pointerup',async e=>{
+  if(!_dg||e.pointerId!==_dg.pid)return;
+  const arrastou=!!_dg.ghost;
+  const sob=document.elementFromPoint(e.clientX,e.clientY);
+  const rowAlvo=arrastou&&sob&&sob.closest?sob.closest('[data-dia]'):null;
+  const tipo=_dg.tipo,id=_dg.id,diaOrigem=_dg.diaOrigem;
+  _dgLimpa();
+  if(!rowAlvo)return;
+  const novoDia=parseInt(rowAlvo.dataset.dia);
+  if(!novoDia||novoDia===diaOrigem)return;
+  await soltarItem(tipo,id,novoDia);
+});
+document.addEventListener('pointercancel',()=>_dgLimpa());
+
+async function soltarItem(tipo,id,novoDia){
+  if(tipo==='l'){
+    await db.from('lancamentos').update({dia:novoDia}).eq('id',id);
+    await carrega();render();
+    if($('content-carteiras').style.display!=='none')renderCarteiras();
+    toast('✓ Movido pro dia '+novoDia);
+    return;
+  }
+  if(tipo==='f'){
+    const f=S.fixos.find(x=>x.id===id);if(!f)return;
+    const escopo=await dlgEscopo({titulo:`Mudar pro dia ${novoDia} em quais meses?`,mes:'Só este mês',frente:'Deste mês em diante',todos:'Todos os meses'});
+    if(!escopo){render();return;}
+    await moverFixoOcorrencia(f,novoDia,escopo,S.mes+1,S.ano);
+    await carrega();render();
+    if($('content-carteiras').style.display!=='none')renderCarteiras();
+    toast('✓ Movido pro dia '+novoDia);
+  }
+}
+
+// Move a ocorrência de um fixo pra outro dia — mesma mecânica testada da edição
+async function moverFixoOcorrencia(f,novoDia,escopo,refM,refA){
+  if(escopo==='todos'){
+    await db.from('fixos').update({dia:novoDia}).eq('id',f.id);
+  } else if(escopo==='frente'){
+    await db.from('fixos').update({mes_fim:refM,ano_fim:refA}).eq('id',f.id);
+    await db.from('fixos').insert({user_id:S.user.id,descricao:f.descricao,valor:f.valor,tipo:f.tipo,dia:novoDia,carteira_id:f.carteira_id,parcelas:null,categoria_id:f.categoria_id,mes_inicio:refM,ano_inicio:refA,ativo:true});
+  } else { // 'mes': pula a ocorrência deste mês e recria única no novo dia
+    const ed=S.excecoes.find(e=>e.fixo_id===f.id&&e.mes===refM&&e.ano===refA&&e.tipo==='editado');
+    const valEff=ed?parseFloat(ed.valor):parseFloat(f.valor);
+    const descEff=(ed&&ed.descricao)?ed.descricao:f.descricao;
+    if(ed)await db.from('fixos_excecoes').delete().eq('id',ed.id); // não deixa exceção órfã brigando com o pulo
+    const jaPulado=S.excecoes.some(e=>e.fixo_id===f.id&&e.mes===refM&&e.ano===refA&&e.tipo==='apagado');
+    if(!jaPulado)await db.from('fixos_excecoes').insert({user_id:S.user.id,fixo_id:f.id,mes:refM,ano:refA,tipo:'apagado'});
+    let fimM=refM+1,fimA=refA;if(fimM>12){fimM=1;fimA++;}
+    await db.from('fixos').insert({user_id:S.user.id,descricao:descEff,valor:valEff,tipo:f.tipo,dia:novoDia,carteira_id:f.carteira_id,parcelas:null,categoria_id:f.categoria_id,mes_inicio:refM,ano_inicio:refA,mes_fim:fimM,ano_fim:fimA,ativo:true});
+  }
 }
 
 // Saldo que conta: anima o número do valor antigo ao novo
@@ -1918,9 +2017,9 @@ function dlgEscopo(opts){
     const b=(esc,ico,txt)=>`<button onclick="escolheEscopo('${esc}')" style="padding:14px;border-radius:12px;background:var(--bg3);color:var(--tm);font-size:14px;font-weight:600;border:1px solid var(--bd);text-align:left;width:100%;margin-bottom:8px;">${ico} ${txt}</button>`;
     const h=`<div class="sh-handle"></div><div class="sh-tit">${opts.titulo||'Aplicar a quais meses?'}</div>
       <div style="margin-top:14px;">
-        ${b('mes','📅',opts.mes||'Só este mês')}
-        ${b('frente','➡️',opts.frente||'Daqui pra frente')}
-        ${b('todos','🔁',opts.todos||'Todos os meses')}
+        ${opts.mes?b('mes','📅',opts.mes):''}
+        ${opts.frente?b('frente','➡️',opts.frente):''}
+        ${opts.todos?b('todos','🔁',opts.todos):''}
         <button onclick="escolheEscopo('')" style="padding:14px;border-radius:12px;background:transparent;color:var(--ts);font-size:14px;font-weight:600;border:none;width:100%;">Cancelar</button>
       </div>`;
     $('dlg-box').innerHTML=h;$('dlg-ov').classList.add('aberto');
@@ -3272,6 +3371,9 @@ function mudaFatura(d){
 function fechaShCompra(){$('sh-compra').classList.remove('aberto');}
 
 async function salvaCompra(){
+  if(S._salvandoCompra)return; // trava: ignora duplo clique enquanto grava
+  S._salvandoCompra=true;
+  try{
   const desc=$('cp-desc').value.trim();
   const val=parseFloat($('cp-val').value);
   const dia=parseInt($('cp-dia').value);
@@ -3286,6 +3388,7 @@ async function salvaCompra(){
     if(S.compraGrupo&&S.compraGrupo.parcelas>1){
       const escopo=await dlgEscopo({titulo:'Aplicar a quais parcelas?',mes:'Só esta parcela',frente:'Desta pra frente',todos:'Todas as parcelas'});
       if(!escopo)return; // cancelou
+      fechaShCompra(); // fecha na hora: evita segundo clique enquanto grava
       const g=S.compraGrupo;
       const upd={descricao:desc,valor:val,dia,cartao_id:cartaoId,categoria_id:categId};
       if(escopo==='mes'){
@@ -3293,12 +3396,33 @@ async function salvaCompra(){
       } else {
         const sibs=S.compras.filter(c=>!c.recorrente&&c.cartao_id===g.cartao_id&&c.descricao===g.descricao&&c.parcelas===g.parcelas&&parseInt(c.dia)===parseInt(g.dia));
         const alvo=escopo==='frente'?sibs.filter(c=>(c.ano_fatura*100+c.mes_fatura)>=(g.ano*100+g.mes)):sibs;
-        for(const c of alvo){await db.from('compras_cartao').update(upd).eq('id',c.id);}
+        const ids=alvo.map(c=>c.id);
+        if(ids.length)await db.from('compras_cartao').update(upd).in('id',ids); // uma tacada só
       }
     } else {
       const cpAtual=S.compras.find(c=>c.id===S.compraEditId)||{};
       const mcBk=cpAtual.mes_compra?{}:(()=>{const mc=mesCompraDeDia(dia);return{mes_compra:mc.mes,ano_compra:mc.ano};})();
-      await db.from('compras_cartao').update({descricao:desc,valor:val,dia,cartao_id:cartaoId,mes_fatura:S.compraFaturaMes,ano_fatura:S.compraFaturaAno,categoria_id:categId,recorrente:tipo==='assinatura',...mcBk}).eq('id',S.compraEditId);
+      if(cpAtual.recorrente&&tipo==='assinatura'){
+        const refM=S.faturaView?S.faturaView.mes:HJM+1, refA=S.faturaView?S.faturaView.ano:HJA;
+        const iniOrd=cpAtual.ano_fatura*100+cpAtual.mes_fatura, refOrd=refA*100+refM;
+        const mudou=Math.abs(parseFloat(cpAtual.valor)-val)>0.001||parseInt(cpAtual.dia)!==dia;
+        if(mudou&&iniOrd<refOrd){
+          const escopo=await dlgEscopo({titulo:'Mudar a assinatura em quais meses?',frente:`Deste mês em diante (${MESES[refM-1]})`,todos:'Todos os meses, inclusive passados'});
+          if(!escopo)return;
+          fechaShCompra();
+          if(escopo==='frente'){
+            // reajuste: encerra a assinatura antiga neste mês e cria a nova — o passado fica intocado
+            await db.from('compras_cartao').update({mes_fim:refM,ano_fim:refA}).eq('id',S.compraEditId);
+            await db.from('compras_cartao').insert({user_id:S.user.id,cartao_id:cartaoId,descricao:desc,valor:val,dia,mes_fatura:refM,ano_fatura:refA,mes_compra:refM,ano_compra:refA,parcelas:1,parcela_atual:1,categoria_id:categId,recorrente:true});
+          } else {
+            await db.from('compras_cartao').update({descricao:desc,valor:val,dia,cartao_id:cartaoId,categoria_id:categId}).eq('id',S.compraEditId);
+          }
+        } else {
+          await db.from('compras_cartao').update({descricao:desc,valor:val,dia,cartao_id:cartaoId,categoria_id:categId,...mcBk}).eq('id',S.compraEditId);
+        }
+      } else {
+        await db.from('compras_cartao').update({descricao:desc,valor:val,dia,cartao_id:cartaoId,mes_fatura:S.compraFaturaMes,ano_fatura:S.compraFaturaAno,categoria_id:categId,recorrente:tipo==='assinatura',...mcBk}).eq('id',S.compraEditId);
+      }
     }
   } else if(tipo==='assinatura'){
     // Assinatura: 1 linha recorrente que entra em toda fatura a partir do mês escolhido
@@ -3321,6 +3445,7 @@ async function salvaCompra(){
   await carrega();fechaShCompra();
   if(S.faturaView)renderFaturaDetalhe();else renderCartoes();
   render();toast(tipo==='assinatura'?'✓ Assinatura adicionada':'✓ Na fatura');
+  }finally{S._salvandoCompra=false;}
 }
 
 async function delCompra(){
