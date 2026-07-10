@@ -531,6 +531,59 @@ body.claro{background:radial-gradient(140% 60% at 50% -10%, rgba(22,163,74,.07) 
 .emoji-pick{border:1px solid var(--bd);background:var(--bg3);border-radius:10px;padding:7px 0;font-size:18px;cursor:pointer;transition:.12s;}
 .emoji-pick.on{border-color:var(--v);background:var(--vg);transform:scale(1.06);}
 .emoji-pick:active{transform:scale(.9);}
+
+/* ═══ POLIMENTO PREMIUM v5 — só casca; apagar este bloco reverte tudo ═══ */
+::selection{background:rgba(45,212,126,.3);}
+*{-webkit-tap-highlight-color:transparent;}
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:8px;border:2px solid var(--bg);}
+::-webkit-scrollbar-track{background:transparent;}
+
+/* dinheiro sempre alinhado (centavo embaixo de centavo) */
+.tl-item-val,.tl-saldo,.rsec-val,.rodape-val,.ch-pill-val,.resumo-val,.cart-hero-val{font-variant-numeric:tabular-nums;}
+.cart-hero-val{letter-spacing:-1.2px;}
+
+/* toque gostoso: interativos respondem ao dedo */
+button,.tl-item,.rsec-head,.conta-row,.cart-card,.bnav-btn,.mbtn,.tl-hdr{transition:transform .12s ease,background .15s ease,border-color .15s ease,box-shadow .18s ease,opacity .15s ease;}
+button:active,.tl-item:active,.rsec-head:active,.conta-row:active,.cart-card:active{transform:scale(.985);}
+.fx-check:active{transform:scale(.88);}
+@media(hover:hover){
+  .tl-item:hover,.rsec:hover,.cart-card:hover,.conta-row:hover{border-color:#2c3345;}
+  .mbtn:hover,.bnav-btn:hover{background:#20242f;}
+}
+
+/* inputs com foco vivo */
+.sh-inp{transition:border-color .15s ease,box-shadow .15s ease;}
+.sh-inp:focus{border-color:var(--v)!important;box-shadow:0 0 0 3px rgba(45,212,126,.14);}
+
+/* sanfona gira macio */
+.rsec-arw{transition:transform .22s cubic-bezier(.2,.8,.2,1);}
+
+/* ——— efeitos do tema escuro ——— */
+body:not(.claro) .tl-body,body:not(.claro) .rsec,body:not(.claro) .cart-card,body:not(.claro) .conta-row{
+  background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,0) 42%),var(--bg2);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 1px 2px rgba(0,0,0,.28);
+}
+body:not(.claro) .cart-hero{
+  background:radial-gradient(130% 150% at 18% 0%,#3dff9e 0%,#2dd47e 46%,#16b468 100%)!important;
+  box-shadow:0 20px 48px -18px rgba(45,212,126,.45),inset 0 1px 0 rgba(255,255,255,.35);
+}
+body:not(.claro) .btn-salv,body:not(.claro) .btn-add{
+  background:linear-gradient(180deg,#3dff9e,#2dd47e 58%,#25c473)!important;color:var(--onv)!important;
+  box-shadow:0 8px 22px -8px rgba(45,212,126,.55),inset 0 1px 0 rgba(255,255,255,.4);
+}
+body:not(.claro) .btn-salv:active,body:not(.claro) .btn-add:active{box-shadow:0 4px 12px -6px rgba(45,212,126,.5);}
+body:not(.claro) .tl-body.hoje{border-color:transparent!important;box-shadow:0 0 0 1.5px var(--v),0 12px 36px -14px rgba(45,212,126,.5),inset 0 1px 0 rgba(255,255,255,.05);}
+body:not(.claro) .tl-dot.hj{box-shadow:0 0 0 4px rgba(45,212,126,.16),0 0 14px rgba(45,212,126,.65);}
+body:not(.claro) .tl-chip-hoje{box-shadow:0 2px 10px -2px rgba(45,212,126,.6);}
+body:not(.claro) .bottom-nav{background:rgba(10,11,16,.72)!important;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-top:0.5px solid rgba(255,255,255,.06)!important;}
+.bnav-btn.active{background:rgba(45,212,126,.10);border-radius:13px;}
+.bnav-btn.active .bnav-lbl{color:var(--v);font-weight:800;}
+body:not(.claro) .rodape{background:rgba(13,15,22,.78)!important;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:0.5px solid rgba(255,255,255,.06)!important;}
+body:not(.claro) .ov{backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);}
+body:not(.claro) .sheet{box-shadow:0 -18px 60px -12px rgba(0,0,0,.65);border-top:0.5px solid rgba(255,255,255,.07);}
+body:not(.claro) .mbar{box-shadow:0 6px 24px -14px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.04);}
+body:not(.claro) .fx-check.on{box-shadow:0 0 12px -2px rgba(45,212,126,.55);}
 </style>
 </head>
 <body>
@@ -663,7 +716,7 @@ body.claro{background:radial-gradient(140% 60% at 50% -10%, rgba(22,163,74,.07) 
           <div style="flex:1;"><div style="font-size:14px;color:var(--ts);">Sair</div></div>
         </div>
       </div>
-      <div style="text-align:center;font-size:11px;color:var(--ts);margin:18px 0 6px;">SobraAí <strong>v4.9</strong></div>
+      <div style="text-align:center;font-size:11px;color:var(--ts);margin:18px 0 6px;">SobraAí <strong>v5.0</strong></div>
     </div>
   </div>
   <div class="rodape" id="rodape-saldo">
@@ -2700,7 +2753,7 @@ function dlgBeneficio(card){
     const nome=card?card.nome:'';
     const letra=card?letraBanco(card):'';
     const saldo=card?card.saldo:'';
-    const rec=card?S.fixos.find(fx=>fx.carteira_id===card.id&&fx.tipo==='entrada'):null;
+    const rec=card?recargaAtivaDe(card.id):null;
     const recVal=rec?rec.valor:'';const recDia=rec?rec.dia:'';
     const bgs=CORES_BANCO.map(c=>`<button onclick="bfSetCor('${c}')" data-cor="${c}" class="banco-swatch" style="background:${c};${c===_bfCor?'outline:3px solid var(--tit);outline-offset:2px;':''}"></button>`).join('');
     const lts=CORES_LETRA.map(c=>`<button onclick="bfSetCorLetra('${c}')" data-cor="${c}" class="banco-swatch" style="background:${c};border:1.5px solid var(--bd);${c===_bfCorLetra?'outline:3px solid var(--tit);outline-offset:2px;':''}"></button>`).join('');
@@ -2768,6 +2821,15 @@ async function novoBeneficio(){
 }
 
 // ── RECARGA MANUAL (benefício) ──
+// Recarga ativa do cartão: prefere a sem fim; depois a de fim mais distante; desempate pelo início mais recente
+function recargaAtivaDe(cardId){
+  const recs=S.fixos.filter(fx=>fx.carteira_id===cardId&&fx.tipo==='entrada'&&fx.ativo!==false);
+  if(!recs.length)return null;
+  const fim=f=>(f.mes_fim&&f.ano_fim)?(f.ano_fim*100+f.mes_fim):999999;
+  const ini=f=>((f.ano_inicio||0)*100+(f.mes_inicio||0));
+  recs.sort((a,b)=>(fim(b)-fim(a))||(ini(b)-ini(a)));
+  return recs[0];
+}
 // Primeira ocorrência da recarga automática que ainda NÃO passou (p/ pular ao antecipar)
 function proximaRecargaOcorrencia(rec){
   let im=HJM,ia=HJA;
@@ -2785,7 +2847,7 @@ function proximaRecargaOcorrencia(rec){
 let _recCard=null,_recModo=null;
 function abreRecarga(cardId,modo){
   const card=S.carteiras.find(c=>c.id===cardId);if(!card)return;
-  const rec=S.fixos.find(fx=>fx.carteira_id===cardId&&fx.tipo==='entrada'&&fx.ativo!==false);
+  const rec=recargaAtivaDe(cardId);
   _recCard=cardId;_recModo=modo;
   const antecipar=modo==='antecipar';
   const prox=antecipar&&rec?proximaRecargaOcorrencia(rec):null;
@@ -2818,7 +2880,7 @@ async function confirmaRecarga(){
   const maxDia=new Date(HJA,HJM+1,0).getDate();
   if(!dia||dia<1||dia>maxDia)return recErr(`Dia inválido: este mês vai do dia 1 ao ${maxDia}.`);
   val=Math.abs(val);
-  const rec=S.fixos.find(fx=>fx.carteira_id===cardId&&fx.tipo==='entrada'&&fx.ativo!==false);
+  const rec=recargaAtivaDe(cardId);
   const catId=rec?rec.categoria_id:((S.categorias.find(c=>c.nome==='Benefício / Auxílio'&&(c.tipo||'saida')==='entrada')||{}).id||null);
   // 1) entrada no cartão, no dia real
   await db.from('lancamentos').insert({
@@ -2843,7 +2905,7 @@ async function editarBeneficio(id){
   if(!cart)return;
   const r=await dlgBeneficio(cart);
   if(!r)return;
-  const rec=S.fixos.find(fx=>fx.carteira_id===id&&fx.tipo==='entrada');
+  const rec=recargaAtivaDe(id);
   if(r==='__DELETE'){
     const ok=await dlgConfirm('Apagar cartão de benefício?',`"${cart.nome}", a recarga mensal e os gastos lançados nela serão removidos.`,'Apagar',true);
     if(!ok)return;
@@ -2989,7 +3051,7 @@ function renderCartoes(){
   } else {
     benefs.forEach(c=>{
       const saldo=saldoCarteira(c.id);
-      const rec=S.fixos.find(fx=>fx.carteira_id===c.id&&fx.tipo==='entrada'&&fx.ativo!==false);
+      const rec=recargaAtivaDe(c.id);
       const recAtiva=rec&&!(rec.mes_fim&&rec.ano_fim&&(HJA*100+(HJM+1))>=(rec.ano_fim*100+rec.mes_fim));
       h+=`<div style="background:var(--bg2);border-radius:14px;padding:13px 14px;margin-bottom:8px;border:0.5px solid var(--bd);cursor:pointer;" onclick="verBeneficio('${c.id}')">
         <div style="display:flex;align-items:center;gap:12px;">
@@ -3098,7 +3160,7 @@ function renderBeneficioDetalhe(){
   const c=S.carteiras.find(x=>x.id===S.benefView);
   if(!c){S.benefView=null;return renderCartoes();}
   const saldo=saldoCarteira(c.id);
-  const rec=S.fixos.find(fx=>fx.carteira_id===c.id&&fx.tipo==='entrada');
+  const rec=recargaAtivaDe(c.id);
   const recAtiva=rec&&!(rec.mes_fim&&rec.ano_fim&&(HJA*100+(HJM+1))>=(rec.ano_fim*100+rec.mes_fim));
 
   // Monta o extrato: recargas (mês a mês até hoje) + lançamentos da carteira
