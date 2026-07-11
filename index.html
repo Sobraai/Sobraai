@@ -734,7 +734,7 @@ body:not(.claro) .fx-check.on{box-shadow:0 0 12px -2px rgba(45,212,126,.55);}
           <div style="flex:1;"><div style="font-size:14px;color:var(--ts);">Sair</div></div>
         </div>
       </div>
-      <div style="text-align:center;font-size:11px;color:var(--ts);margin:18px 0 6px;">SobraAí <strong>v5.3</strong></div>
+      <div style="text-align:center;font-size:11px;color:var(--ts);margin:18px 0 6px;">SobraAí <strong>v5.3.1</strong></div>
     </div>
   </div>
   <div class="rodape" id="rodape-saldo">
@@ -3302,11 +3302,18 @@ function renderFaturaDetalhe(){
     h+='<div style="text-align:center;padding:20px;color:var(--ts);font-size:13px;">Nenhuma compra nesta fatura.</div>';
   } else {
     comprasFat.sort((x,y)=>x.dia-y.dia).forEach(cp=>{
-      const tag=cp.recorrente?'assinatura':(cp.parcelas>1?`${cp.parcela_atual}/${cp.parcelas}`:'');
+      const isAssin=!!cp.recorrente;
+      const parcTag=(!isAssin&&cp.parcelas>1)?`<span class="tl-tag">${cp.parcela_atual}/${cp.parcelas}</span>`:'';
       const cat=nomeCateg(cp.categoria_id);
-      h+=`<div onclick="abreCompra('${cp.id}')" style="background:var(--bg2);border-radius:12px;padding:12px 14px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;border:0.5px solid var(--bd);">
-        <div><div style="font-size:13px;color:var(--tit);">${cp.descricao} ${tag?`<span class="tl-tag">${tag}</span>`:''}</div><div style="font-size:10px;color:var(--ts);margin-top:1px;">dia ${cp.dia}${cat?' · '+cat:''}</div></div>
-        <div style="font-size:13px;font-weight:600;color:var(--r);">R$ ${brl(cp.valor)}</div>
+      const ico=isAssin?'🔁':'💳';
+      const corC=corBanco(ct);
+      h+=`<div class="tl-item" style="border-left-color:${corC};" onclick="abreCompra('${cp.id}')">
+        <div class="tl-ic" style="background:${corTint(corC,.16)};color:${corC};">${ico}</div>
+        <div class="tl-item-info">
+          <div class="tl-item-nome">${cp.descricao}${parcTag}</div>
+          <div class="tl-item-sub">dia ${cp.dia}${cat?' · '+cat:''}</div>
+        </div>
+        <div class="tl-val-wrap"><div class="tl-item-val neg">-R$${brl(cp.valor)}</div></div>
       </div>`;
     });
   }
