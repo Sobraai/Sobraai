@@ -114,13 +114,13 @@ input,select{outline:none;font-family:inherit;}
 .tl-saldo.neg{color:var(--r);}
 .tl-saldo.vazio{font-size:12px;color:var(--ts);}
 .tl-itens{background:var(--bg3);border-radius:10px;margin-top:8px;overflow:hidden;}
-.tl-item{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:none;cursor:pointer;}
+.tl-item{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 12px;border-bottom:none;cursor:pointer;gap:10px;}
 .tl-item:last-child{border-bottom:none;}
 .tl-item:active{background:var(--bg2);}
-.tl-item-info{flex:1;}
-.tl-item-nome{font-size:13px;color:var(--tm);}
-.tl-item-sub{font-size:10px;color:var(--ts);margin-top:1px;}
-.tl-item-val{font-size:13px;font-weight:500;}
+.tl-item-info{flex:1;min-width:0;}
+.tl-item-nome{font-size:13px;color:var(--tm);line-height:1.35;}
+.tl-item-sub{font-size:10.5px;color:var(--ts);margin-top:2px;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tl-item-val{font-size:13px;font-weight:500;flex-shrink:0;text-align:right;padding-top:1px;}
 .tl-item-val.pos{color:var(--v);}
 .tl-item-val.neg{color:var(--r);}
 .tl-item-val.benef{color:var(--ts);}
@@ -569,7 +569,7 @@ button:active,.tl-item:active,.rsec-head:active,.conta-row:active,.cart-card:act
 .rsec-arw{transition:transform .22s cubic-bezier(.2,.8,.2,1);}
 
 /* ——— efeitos do tema escuro ——— */
-body:not(.claro) .tl-body,body:not(.claro) .rsec,body:not(.claro) .cart-card,body:not(.claro) .conta-row{
+body:not(.claro) .rsec,body:not(.claro) .cart-card,body:not(.claro) .conta-row{
   background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,0) 42%),var(--bg2);
 }
 body:not(.claro) .cart-hero{
@@ -724,7 +724,7 @@ body:not(.claro) .fx-check.on{box-shadow:0 0 12px -2px rgba(45,212,126,.55);}
           <div style="flex:1;"><div style="font-size:14px;color:var(--ts);">Sair</div></div>
         </div>
       </div>
-      <div style="text-align:center;font-size:11px;color:var(--ts);margin:18px 0 6px;">SobraAí <strong>v5.1</strong></div>
+      <div style="text-align:center;font-size:11px;color:var(--ts);margin:18px 0 6px;">SobraAí <strong>v5.1.1</strong></div>
     </div>
   </div>
   <div class="rodape" id="rodape-saldo">
