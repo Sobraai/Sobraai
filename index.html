@@ -209,7 +209,7 @@ body.tema-claro .btn-p,body.tema-claro .btn-salv,body.tema-claro .bnav-fab{color
 .tl-dot.neg{box-shadow:0 0 10px rgba(255,125,110,.4);}
 
 /* Itens expandidos com leve elevação */
-.tl-itens{border:0.5px solid rgba(255,255,255,.04);box-shadow:0 2px 12px rgba(0,0,0,.35);}
+.tl-itens{border:none;box-shadow:none;}
 .tl-item{transition:background .12s ease;}
 .tl-hdr{transition:opacity .12s ease;}
 .tl-hdr:active{opacity:.6;}
@@ -406,7 +406,7 @@ body.claro{background:radial-gradient(140% 60% at 50% -10%, rgba(22,163,74,.07) 
 .tl-dot{box-shadow:0 0 0 2px var(--bg);}
 
 /* Itens do dia: cartão com profundidade ao expandir */
-.tl-itens{background:linear-gradient(180deg,var(--bg3),var(--bg2));border:0.5px solid rgba(255,255,255,.05);box-shadow:0 6px 22px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.03);}
+.tl-itens{background:transparent;border:none;box-shadow:none;}
 .tl-item{transition:background .14s ease,padding-left .14s ease;}
 .tl-item:active{background:var(--bg2);padding-left:18px;}
 
@@ -721,7 +721,7 @@ body:not(.claro) .fx-check.on{box-shadow:0 0 12px -2px rgba(45,212,126,.55);}
           <div style="flex:1;"><div style="font-size:14px;color:var(--ts);">Sair</div></div>
         </div>
       </div>
-      <div style="text-align:center;font-size:11px;color:var(--ts);margin:18px 0 6px;">SobraAí <strong>v5.0.1</strong></div>
+      <div style="text-align:center;font-size:11px;color:var(--ts);margin:18px 0 6px;">SobraAí <strong>v5.0.2</strong></div>
     </div>
   </div>
   <div class="rodape" id="rodape-saldo">
@@ -737,7 +737,7 @@ body:not(.claro) .fx-check.on{box-shadow:0 0 12px -2px rgba(45,212,126,.55);}
   </div>
   <div class="bottom-nav">
     <button class="bnav-btn active" id="bnav-mes" onclick="abaApp('mes')"><span class="bnav-ic">📅</span><span class="bnav-lbl">Mês</span></button>
-    <button class="bnav-btn" id="bnav-cart" onclick="abaApp('carteiras')"><span class="bnav-ic">🏦</span><span class="bnav-lbl">Resumo</span></button>
+    <button class="bnav-btn" id="bnav-cart" onclick="abaApp('carteiras')"><span class="bnav-ic">🏦</span><span class="bnav-lbl">Controle</span></button>
     <button class="bnav-fab" onclick="toggleFab()"><span id="fab-ic">+</span></button>
     <button class="bnav-btn" id="bnav-cartoes" onclick="abaApp('cartoes')"><span class="bnav-ic">💳</span><span class="bnav-lbl">Cartões</span></button>
     <button class="bnav-btn" id="bnav-config" onclick="abaApp('config')"><span class="bnav-ic">⚙️</span><span class="bnav-lbl">Config</span></button>
@@ -2494,7 +2494,7 @@ function renderCarteiras(){
   const benefLinha=(temBenef,valHoje,valFim)=>temBenef?`<div class="cart-hero-benef">🍽️ Benefícios (VR/VA): <strong>${fmt(valHoje)}</strong>${(valFim!==null&&Math.abs(valFim-valHoje)>0.001)?` · ${fmt(valFim)} no fim`:''}</div>`:'';
 
   // ── HERO: adapta ao mês selecionado ──
-  let h=`<div style="font-size:13px;font-weight:700;color:var(--ts);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Resumo de ${MESES[m]} ${a}</div>`;
+  let h=`<div style="font-size:13px;font-weight:700;color:var(--ts);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Controle de ${MESES[m]} ${a}</div>`;
   if(isCur){
     h+=`<div class="cart-hero">
       <div class="cart-hero-lbl">Você tem hoje</div>
@@ -2666,7 +2666,7 @@ function renderCarteiras(){
     });
   }
   fbody+=`</div>`;
-  h+=rsec(false,'grafico','var(--chip3)','#7dc4ff','Como o mês vai terminar',`${sobrou<0?'vai faltar':'vai sobrar'} R$ ${brl(Math.abs(sobrou))}`,'','',fbody);
+  h+=rsec(false,'grafico','var(--chip3)','#7dc4ff','Resumo do Mês',`${sobrou<0?'vai faltar':'vai sobrar'} R$ ${brl(Math.abs(sobrou))}`,'','',fbody);
 
   // ── MEUS BANCOS ──
   const totBancos=reais.reduce((s,c)=>s+(isCur?saldoCarteira(c.id):saldoCarteira(c.id,ultimoDia,m,a)),0);
