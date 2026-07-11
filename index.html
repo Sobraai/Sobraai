@@ -337,8 +337,10 @@ body,.hdr,.bottom-nav,.rodape,.sheet,.tl-itens,.auth-box,.content>div{transition
 .cart-hero-lbl{font-size:11px;color:rgba(4,33,15,.7);text-transform:uppercase;letter-spacing:.06em;font-weight:800;}
 .cart-hero-val{font-size:40px;font-weight:800;color:#04210f;line-height:1;margin-top:6px;letter-spacing:-1px;font-variant-numeric:tabular-nums;}
 .cart-hero-fim{font-size:12.5px;color:#063a22;margin-top:9px;font-weight:600;}
-.ch-pills{display:flex;gap:10px;margin-top:16px;}
-.ch-pill{flex:1;background:rgba(255,255,255,.2);border-radius:13px;padding:10px 13px;}
+.ch-pills{display:flex;margin-top:18px;padding-top:14px;border-top:1px solid rgba(4,33,15,.14);}
+.ch-pill{flex:1;padding:0 14px;}
+.ch-pill:first-child{padding-left:0;}
+.ch-pill+.ch-pill{border-left:1px solid rgba(4,33,15,.14);}
 .ch-pill-lbl{font-size:10px;font-weight:800;color:rgba(4,33,15,.6);text-transform:uppercase;letter-spacing:.03em;line-height:1.2;}
 .ch-pill-val{font-size:17px;font-weight:800;color:#04210f;margin-top:3px;font-variant-numeric:tabular-nums;letter-spacing:-.3px;}
 .cart-hero-fim strong{color:#04210f;font-weight:800;}
@@ -505,7 +507,11 @@ body.claro{background:radial-gradient(140% 60% at 50% -10%, rgba(22,163,74,.07) 
 .cgrp.open .cgrp-body{display:block;}
 .rsec{background:var(--bg2);border:0.5px solid var(--bd);border-radius:14px;margin-bottom:8px;overflow:hidden;}
 .rsec-head{display:flex;align-items:center;gap:11px;padding:14px 16px;cursor:pointer;}
-.rsec-ic{font-size:18px;width:22px;text-align:center;flex-shrink:0;}
+.rsec-badge{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.rsec-badge svg{width:19px;height:19px;}
+.rsec{margin-bottom:10px;}
+.rsec-head{padding:15px 16px;gap:13px;}
+.rsec-tit{letter-spacing:-.1px;}
 .rsec-tit{font-size:14px;font-weight:600;color:var(--tit);}
 .rsec-sub{font-size:11px;color:var(--ts);margin-top:2px;}
 .rsec-val{font-size:14px;font-weight:700;}
@@ -561,8 +567,7 @@ button:active,.tl-item:active,.rsec-head:active,.conta-row:active,.cart-card:act
 
 /* ——— efeitos do tema escuro ——— */
 body:not(.claro) .tl-body,body:not(.claro) .rsec,body:not(.claro) .cart-card,body:not(.claro) .conta-row{
-  background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,0) 42%),var(--bg2);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 1px 2px rgba(0,0,0,.28);
+  background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,0) 42%),var(--bg2);
 }
 body:not(.claro) .cart-hero{
   background:radial-gradient(130% 150% at 18% 0%,#3dff9e 0%,#2dd47e 46%,#16b468 100%)!important;
@@ -716,7 +721,7 @@ body:not(.claro) .fx-check.on{box-shadow:0 0 12px -2px rgba(45,212,126,.55);}
           <div style="flex:1;"><div style="font-size:14px;color:var(--ts);">Sair</div></div>
         </div>
       </div>
-      <div style="text-align:center;font-size:11px;color:var(--ts);margin:18px 0 6px;">SobraAí <strong>v5.0</strong></div>
+      <div style="text-align:center;font-size:11px;color:var(--ts);margin:18px 0 6px;">SobraAí <strong>v5.0.1</strong></div>
     </div>
   </div>
   <div class="rodape" id="rodape-saldo">
@@ -2606,9 +2611,17 @@ function renderCarteiras(){
     });
     return hh;
   };
-  const rsec=(open,ico,tit,sub,val,valCls,body)=>`<div class="rsec${open?' open':''}">
+  const rsecIco={
+    pagar:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="8 7 17 7 17 16"/></svg>`,
+    receber:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="7" x2="7" y2="17"/><polyline points="16 17 7 17 7 8"/></svg>`,
+    pago:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`,
+    grafico:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="20" x2="6" y2="12"/><line x1="12" y1="20" x2="12" y2="6"/><line x1="18" y1="20" x2="18" y2="15"/></svg>`,
+    banco:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10 12 4l9 6"/><line x1="4" y1="10" x2="20" y2="10"/><line x1="6" y1="10" x2="6" y2="18"/><line x1="12" y1="10" x2="12" y2="18"/><line x1="18" y1="10" x2="18" y2="18"/><line x1="4" y1="20" x2="20" y2="20"/></svg>`,
+  };
+  const rsecBadge=(key,bg,fg)=>`<div class="rsec-badge" style="background:${bg};color:${fg};">${rsecIco[key]}</div>`;
+  const rsec=(open,icoKey,icoBg,icoFg,tit,sub,val,valCls,body)=>`<div class="rsec${open?' open':''}">
     <div class="rsec-head" onclick="this.parentElement.classList.toggle('open')">
-      <span class="rsec-ic">${ico}</span>
+      ${rsecBadge(icoKey,icoBg,icoFg)}
       <div style="flex:1;min-width:0;"><div class="rsec-tit">${tit}</div>${sub?`<div class="rsec-sub">${sub}</div>`:''}</div>
       ${val?`<span class="rsec-val ${valCls||''}">${val}</span>`:''}
       <span class="rsec-arw">›</span>
@@ -2617,9 +2630,9 @@ function renderCarteiras(){
   </div>`;
   const itPagar=pend.filter(it=>!it.isEnt), itReceber=pend.filter(it=>it.isEnt);
   const totPagar=itPagar.reduce((s,it)=>s+it.val,0), totReceber=itReceber.reduce((s,it)=>s+it.val,0);
-  if(itPagar.length) h+=rsec(false,'💸','A pagar',`${itPagar.length} ${itPagar.length===1?'conta':'contas'}`,`-R$ ${brl(totPagar)}`,'neg',secaoContas(itPagar,false));
-  if(itReceber.length) h+=rsec(false,'💰','A receber',`${itReceber.length} ${itReceber.length===1?'entrada':'entradas'}`,`+R$ ${brl(totReceber)}`,'pos',secaoContas(itReceber,true));
-  if(feito.length) h+=rsec(false,'✅','Já paguei',`${feito.length} ${feito.length===1?'conta':'contas'}`,'','',feito.map(linhaFeito).join(''));
+  if(itPagar.length) h+=rsec(false,'pagar','var(--rg)','var(--r)','A pagar',`${itPagar.length} ${itPagar.length===1?'conta':'contas'}`,`-R$ ${brl(totPagar)}`,'neg',secaoContas(itPagar,false));
+  if(itReceber.length) h+=rsec(false,'receber','var(--vg)','var(--v)','A receber',`${itReceber.length} ${itReceber.length===1?'entrada':'entradas'}`,`+R$ ${brl(totReceber)}`,'pos',secaoContas(itReceber,true));
+  if(feito.length) h+=rsec(false,'pago','var(--vg)','var(--v)','Já paguei',`${feito.length} ${feito.length===1?'conta':'contas'}`,'','',feito.map(linhaFeito).join(''));
 
   // ── PRA ONDE FOI: categorias ──
   // Lançamentos de pagamento de fatura são representados pelas COMPRAS (abaixo), então excluímos aqui
@@ -2653,7 +2666,7 @@ function renderCarteiras(){
     });
   }
   fbody+=`</div>`;
-  h+=rsec(false,'📊','Como o mês vai terminar',`${sobrou<0?'vai faltar':'vai sobrar'} R$ ${brl(Math.abs(sobrou))}`,'','',fbody);
+  h+=rsec(false,'grafico','var(--chip3)','#7dc4ff','Como o mês vai terminar',`${sobrou<0?'vai faltar':'vai sobrar'} R$ ${brl(Math.abs(sobrou))}`,'','',fbody);
 
   // ── MEUS BANCOS ──
   const totBancos=reais.reduce((s,c)=>s+(isCur?saldoCarteira(c.id):saldoCarteira(c.id,ultimoDia,m,a)),0);
@@ -2676,7 +2689,7 @@ function renderCarteiras(){
       </div>
       <span style="color:var(--ts);font-size:18px;">›</span>
     </div>`;}).join('');
-  h+=rsec(false,'🏦','Meus bancos',`${reais.length} ${reais.length===1?'conta':'contas'}`,fmt(totBancos),'',bbody);
+  h+=rsec(false,'banco','var(--bg3)','var(--tm)','Meus bancos',`${reais.length} ${reais.length===1?'conta':'contas'}`,fmt(totBancos),'',bbody);
   h+=`<div class="resumo-hint" onclick="abaApp('mes')">Quer ver gasto por gasto? <span>Abrir o Mês ›</span></div>`;
   lista.innerHTML=h;
 }
