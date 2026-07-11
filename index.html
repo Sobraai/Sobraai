@@ -114,7 +114,7 @@ input,select{outline:none;font-family:inherit;}
 .tl-saldo.neg{color:var(--r);}
 .tl-saldo.vazio{font-size:12px;color:var(--ts);}
 .tl-itens{background:var(--bg3);border-radius:10px;margin-top:8px;overflow:hidden;}
-.tl-item{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border-bottom:0.5px solid var(--bd);cursor:pointer;}
+.tl-item{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:none;cursor:pointer;}
 .tl-item:last-child{border-bottom:none;}
 .tl-item:active{background:var(--bg2);}
 .tl-item-info{flex:1;}
@@ -126,7 +126,10 @@ input,select{outline:none;font-family:inherit;}
 .tl-item-val.benef{color:var(--ts);}
 .tl-item-val.info{color:var(--ts);}
 .tl-tag{font-size:9px;font-weight:700;color:var(--ts);background:var(--bd);border-radius:4px;padding:1px 4px;margin-left:4px;}
-.tl-tag.card{background:#ffd66e;color:#8a6d00;}
+.tl-tag.card{background:var(--chip2);color:#7dc4ff;}
+.tl-tag.assin{background:var(--chip1);color:#ffb447;}
+.tl-tag.vrva{background:var(--vg);color:var(--v);}
+
 .tl-row.passado{opacity:1;}
 .tl-grip{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;color:var(--ts);opacity:.45;font-size:13px;padding:4px 6px 4px 2px;flex-shrink:0;letter-spacing:-1px;}
 .tl-item.arrastando{opacity:.35;}
@@ -721,7 +724,7 @@ body:not(.claro) .fx-check.on{box-shadow:0 0 12px -2px rgba(45,212,126,.55);}
           <div style="flex:1;"><div style="font-size:14px;color:var(--ts);">Sair</div></div>
         </div>
       </div>
-      <div style="text-align:center;font-size:11px;color:var(--ts);margin:18px 0 6px;">SobraAí <strong>v5.0.2</strong></div>
+      <div style="text-align:center;font-size:11px;color:var(--ts);margin:18px 0 6px;">SobraAí <strong>v5.1</strong></div>
     </div>
   </div>
   <div class="rodape" id="rodape-saldo">
@@ -1686,10 +1689,11 @@ function render(){
       const cart=S.cartoes.find(c=>c.id===cp.cartao_id);
       const cat=nomeCateg(cp.categoria_id);
       const tagTxt=cp.recorrente?'assinatura':(cp.parcelas>1?`cartão ${cp.parcela_atual}/${cp.parcelas}`:'cartão');
+      const tagCls=cp.recorrente?'assin':'card';
       const sub=[cart?cart.nome:'Cartão',cat].filter(Boolean).join(' · ');
       h+=`<div class="tl-item" onclick="event.stopPropagation();abreCompra('${cp.id}')">
         <div class="tl-item-info">
-          <div class="tl-item-nome">${cp.descricao} <span class="tl-tag card">${tagTxt}</span></div>
+          <div class="tl-item-nome">${cp.descricao} <span class="tl-tag ${tagCls}">${tagTxt}</span></div>
           <div class="tl-item-sub">${sub} · entra na fatura de ${MESES[cp.mes_fatura-1]}</div>
         </div>
         <div class="tl-item-val info">-R$${brl(cp.valor)}</div>
@@ -1729,7 +1733,7 @@ function render(){
       const cart=S.carteiras.find(c=>c.id===l.carteira_id);
       const cat=nomeCateg(l.categoria_id);
       const sub=[cart?cart.nome:null,cat].filter(Boolean).join(' · ');
-      const tag=benef?` <span class="tl-tag">VR/VA</span>`:'';
+      const tag=benef?` <span class="tl-tag vrva">VR/VA</span>`:'';
       const valCls=benef?'benef':(isEnt?'pos':'neg');
       h+=`<div class="tl-item" onclick="event.stopPropagation();abreLanc(${d},'${l.id}')">
         <span class="tl-grip" data-drag="l:${l.id}" onclick="event.stopPropagation()">⠿</span>
@@ -3029,19 +3033,19 @@ function renderCartoes(){
   const cm=S.cartoesMes,ca=S.cartoesAno;
   const isMesAtual=cm===HJM&&ca===HJA;
   let h=`<div style="padding:16px;">
-    <div style="display:flex;align-items:center;gap:8px;background:var(--bg2);border-radius:12px;padding:8px;margin-bottom:16px;border:0.5px solid var(--bd);">
-      <button onclick="navMesCartoes(-1)" style="width:34px;height:34px;border-radius:9px;background:var(--bg3);color:var(--v);font-size:16px;">‹</button>
+    <div class="mbar">
+      <button class="mbtn" onclick="navMesCartoes(-1)">‹</button>
       <div style="flex:1;text-align:center;font-size:14px;font-weight:700;color:var(--tit);">${MESES[cm]} ${ca}</div>
-      <button onclick="navMesCartoes(1)" style="width:34px;height:34px;border-radius:9px;background:var(--bg3);color:var(--v);font-size:16px;">›</button>
+      <button class="mbtn" onclick="navMesCartoes(1)">›</button>
     </div>
-    <div style="font-size:11px;font-weight:700;color:var(--ts);letter-spacing:.07em;margin:0 2px 8px;">CRÉDITO</div>`;
+    <div style="font-size:11px;font-weight:700;color:var(--ts);letter-spacing:.07em;margin:14px 2px 8px;">CRÉDITO</div>`;
   if(!S.cartoes.length){
     h+='<div style="text-align:center;padding:24px 16px;color:var(--ts);font-size:13px;">Nenhum cartão ainda. Compras entram na fatura, e a fatura desconta do saldo no vencimento.</div>';
     h+='<button class="btn-add" onclick="novoCartao()">+ Adicionar cartão</button>';
   } else {
     S.cartoes.forEach(ct=>{
       const v=valorFatura(ct.id,cm+1,ca);
-      h+=`<div onclick="verFatura('${ct.id}',${cm+1},${ca})" style="background:var(--bg2);border-radius:14px;padding:13px 14px;margin-bottom:8px;border:0.5px solid var(--bd);cursor:pointer;display:flex;align-items:center;gap:12px;">
+      h+=`<div class="cart-card" onclick="verFatura('${ct.id}',${cm+1},${ca})" style="cursor:pointer;display:flex;align-items:center;gap:12px;">
         ${badgeBanco(ct,42)}
         <div style="flex:1;min-width:0;">
           <div style="font-size:14px;font-weight:600;color:var(--tit);">${ct.nome}</div>
@@ -3066,7 +3070,7 @@ function renderCartoes(){
       const saldo=saldoCarteira(c.id);
       const rec=recargaAtivaDe(c.id);
       const recAtiva=rec&&!(rec.mes_fim&&rec.ano_fim&&(HJA*100+(HJM+1))>=(rec.ano_fim*100+rec.mes_fim));
-      h+=`<div style="background:var(--bg2);border-radius:14px;padding:13px 14px;margin-bottom:8px;border:0.5px solid var(--bd);cursor:pointer;" onclick="verBeneficio('${c.id}')">
+      h+=`<div class="cart-card" style="cursor:pointer;display:block;" onclick="verBeneficio('${c.id}')">
         <div style="display:flex;align-items:center;gap:12px;">
           ${badgeBanco(c,42)}
           <div style="flex:1;min-width:0;">
