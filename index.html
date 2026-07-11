@@ -114,7 +114,11 @@ input,select{outline:none;font-family:inherit;}
 .tl-saldo.neg{color:var(--r);}
 .tl-saldo.vazio{font-size:12px;color:var(--ts);}
 .tl-itens{background:var(--bg3);border-radius:10px;margin-top:8px;overflow:hidden;}
-.tl-item{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 12px;border-bottom:none;cursor:pointer;gap:10px;}
+.tl-item{display:flex;justify-content:space-between;align-items:flex-start;padding:11px 12px;cursor:pointer;gap:10px;background:var(--bg2);border-left:3px solid var(--bd);border-radius:0 12px 12px 0;margin-bottom:8px;}
+.tl-ic{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.tl-fatura-nota{font-size:10px;color:#ffb447;margin-top:5px;display:flex;align-items:center;gap:4px;}
+.tl-val-wrap{display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;}
+.tl-banco-tag{font-size:9px;font-weight:700;border-radius:4px;padding:1.5px 6px;margin-top:5px;display:inline-block;white-space:nowrap;}
 .tl-item:last-child{border-bottom:none;}
 .tl-item:active{background:var(--bg2);}
 .tl-item-info{flex:1;min-width:0;}
@@ -724,7 +728,7 @@ body:not(.claro) .fx-check.on{box-shadow:0 0 12px -2px rgba(45,212,126,.55);}
           <div style="flex:1;"><div style="font-size:14px;color:var(--ts);">Sair</div></div>
         </div>
       </div>
-      <div style="text-align:center;font-size:11px;color:var(--ts);margin:18px 0 6px;">SobraAí <strong>v5.1.2</strong></div>
+      <div style="text-align:center;font-size:11px;color:var(--ts);margin:18px 0 6px;">SobraAí <strong>v5.2</strong></div>
     </div>
   </div>
   <div class="rodape" id="rodape-saldo">
@@ -1676,27 +1680,37 @@ function render(){
         <div class="tl-itens" id="tl-itens-${d}" style="display:none;">`;
 
     dFaturas.forEach(fat=>{
-      h+=`<div class="tl-item" onclick="event.stopPropagation();verFatura('${fat.cartao.id}',${fat.mes},${fat.ano})">
+      h+=`<div class="tl-item" style="border-left-color:#378add;" onclick="event.stopPropagation();verFatura('${fat.cartao.id}',${fat.mes},${fat.ano})">
+        <div class="tl-ic" style="background:var(--chip2);color:#7dc4ff;">💳</div>
         <div class="tl-item-info">
-          <div class="tl-item-nome">Fatura ${fat.cartao.nome} <span class="tl-tag card">cartão</span></div>
-          <div class="tl-item-sub">${fat.cartao.emoji} Toque para ver detalhes</div>
+          <div class="tl-item-nome">Fatura ${fat.cartao.nome}</div>
+          <div class="tl-item-sub">Toque para ver detalhes</div>
         </div>
-        <div class="tl-item-val neg">-R$${brl(fat.valor)}</div>
+        <div class="tl-val-wrap"><div class="tl-item-val neg">-R$${brl(fat.valor)}</div></div>
       </div>`;
     });
 
     dCompras.forEach(cp=>{
       const cart=S.cartoes.find(c=>c.id===cp.cartao_id);
       const cat=nomeCateg(cp.categoria_id);
-      const tagTxt=cp.recorrente?'assinatura':(cp.parcelas>1?`cartão ${cp.parcela_atual}/${cp.parcelas}`:'cartão');
-      const tagCls=cp.recorrente?'assin':'card';
-      const sub=[cart?cart.nome:'Cartão',cat].filter(Boolean).join(' · ');
-      h+=`<div class="tl-item" onclick="event.stopPropagation();abreCompra('${cp.id}')">
+      const isAssin=!!cp.recorrente;
+      const parcTag=(!isAssin&&cp.parcelas>1)?`<span class="tl-tag">${cp.parcela_atual}/${cp.parcelas}</span>`:'';
+      const ico=isAssin?'🔁':'💳';
+      const icoBg=isAssin?'var(--chip1)':'var(--chip2)';
+      const icoFg=isAssin?'#ffb447':'#7dc4ff';
+      const borda=isAssin?'#ffb447':'#378add';
+      const bancoNome=cart?cart.nome:'Cartão';
+      h+=`<div class="tl-item" style="border-left-color:${borda};" onclick="event.stopPropagation();abreCompra('${cp.id}')">
+        <div class="tl-ic" style="background:${icoBg};color:${icoFg};">${ico}</div>
         <div class="tl-item-info">
-          <div class="tl-item-nome">${cp.descricao} <span class="tl-tag ${tagCls}">${tagTxt}</span></div>
-          <div class="tl-item-sub">${sub} · entra na fatura de ${MESES[cp.mes_fatura-1]}</div>
+          <div class="tl-item-nome">${cp.descricao}${parcTag}</div>
+          ${cat?`<div class="tl-item-sub">${cat}</div>`:''}
+          <div class="tl-fatura-nota">📅 Entra na fatura de ${MESES[cp.mes_fatura-1]}</div>
         </div>
-        <div class="tl-item-val info">-R$${brl(cp.valor)}</div>
+        <div class="tl-val-wrap">
+          <div class="tl-item-val info">-R$${brl(cp.valor)}</div>
+          <span class="tl-banco-tag" style="background:${icoBg};color:${icoFg};">${bancoNome}</span>
+        </div>
       </div>`;
     });
 
@@ -1704,26 +1718,30 @@ function render(){
       const isEnt=f.tipo==='entrada';
       const cart=S.carteiras.find(c=>c.id===f.carteira_id);
       const mesesDesde=(a-f.ano_inicio)*12+(m+1-f.mes_inicio);
-      const tag=f.parcelas?`${mesesDesde+1}/${f.parcelas}`:'fixo';
+      const tag=f.parcelas?`<span class="tl-tag">${mesesDesde+1}/${f.parcelas}</span>`:'';
       const pago=!!f._pago;
       const vEff=fixoValEff(f);
       const mostraCheck=!isFut;
       const venceuSemPagar=isAtual&&!pago&&diaNoMes(fixoDiaEff(f),m,a)<HJD;
       const sub=[];
-      if(cart)sub.push(cart.nome);
       if(pago)sub.push(`✓ ${isEnt?'recebido':'pago'}${(f._pago.dia_pago&&f._pago.dia_pago!==f.dia)?' dia '+f._pago.dia_pago:''}`);
       else if(venceuSemPagar)sub.push('⚠️ a confirmar');
       else if(mostraCheck)sub.push(isEnt?'a receber':'a pagar');
       const subTxt=sub.join(' · ');
       const check=mostraCheck?`<button class="fx-check ${pago?'on':''}" onclick="event.stopPropagation();${pago?`desmarcarFixo('${f.id}',${m+1},${a})`:`pagarFixo('${f.id}',${m+1},${a})`}">${pago?'✓':''}</button>`:'';
-      h+=`<div class="tl-item${venceuSemPagar?' fx-vencido':''}">
+      const ico=catEmoji(f.categoria_id,isEnt?'💰':'🧾');
+      h+=`<div class="tl-item${venceuSemPagar?' fx-vencido':''}" style="border-left-color:#6b7280;">
         ${(!pago&&!f.parcelas)?`<span class="tl-grip" data-drag="f:${f.id}" onclick="event.stopPropagation()">⠿</span>`:''}
         ${check}
+        <div class="tl-ic" style="background:var(--bg3);color:var(--tm);" onclick="event.stopPropagation();abreFixo('${f.id}')">${ico}</div>
         <div class="tl-item-info" onclick="event.stopPropagation();abreFixo('${f.id}')">
-          <div class="tl-item-nome">${f.descricao} <span class="tl-tag">${tag}</span></div>
+          <div class="tl-item-nome">${f.descricao}${tag}</div>
           ${subTxt?`<div class="tl-item-sub">${subTxt}</div>`:''}
         </div>
-        <div class="tl-item-val ${isEnt?'pos':'neg'}" onclick="event.stopPropagation();abreFixo('${f.id}')">${isEnt?'+':'-'}R$${brl(vEff)}</div>
+        <div class="tl-val-wrap" onclick="event.stopPropagation();abreFixo('${f.id}')">
+          <div class="tl-item-val ${isEnt?'pos':'neg'}">${isEnt?'+':'-'}R$${brl(vEff)}</div>
+          ${cart?`<span class="tl-banco-tag" style="background:var(--bg3);color:var(--tm);">${cart.nome}</span>`:''}
+        </div>
       </div>`;
     });
 
@@ -1732,16 +1750,22 @@ function render(){
       const benef=ehBenef(l.carteira_id);
       const cart=S.carteiras.find(c=>c.id===l.carteira_id);
       const cat=nomeCateg(l.categoria_id);
-      const sub=[cart?cart.nome:null,cat].filter(Boolean).join(' · ');
-      const tag=benef?` <span class="tl-tag vrva">VR/VA</span>`:'';
       const valCls=benef?'benef':(isEnt?'pos':'neg');
-      h+=`<div class="tl-item" onclick="event.stopPropagation();abreLanc(${d},'${l.id}')">
+      const ico=benef?'🍽️':catEmoji(l.categoria_id,isEnt?'💰':'💸');
+      const icoBg=benef?'var(--vg)':'var(--bg3)';
+      const icoFg=benef?'var(--v)':'var(--tm)';
+      const borda=benef?'var(--v)':'#6b7280';
+      h+=`<div class="tl-item" style="border-left-color:${borda};" onclick="event.stopPropagation();abreLanc(${d},'${l.id}')">
         <span class="tl-grip" data-drag="l:${l.id}" onclick="event.stopPropagation()">⠿</span>
+        <div class="tl-ic" style="background:${icoBg};color:${icoFg};">${ico}</div>
         <div class="tl-item-info">
-          <div class="tl-item-nome">${l.descricao}${tag}</div>
-          ${sub?`<div class="tl-item-sub">${sub}</div>`:''}
+          <div class="tl-item-nome">${l.descricao}</div>
+          ${cat?`<div class="tl-item-sub">${cat}</div>`:''}
         </div>
-        <div class="tl-item-val ${valCls}">${isEnt?'+':'-'}R$${brl(l.valor)}</div>
+        <div class="tl-val-wrap">
+          <div class="tl-item-val ${valCls}">${isEnt?'+':'-'}R$${brl(l.valor)}</div>
+          ${cart?`<span class="tl-banco-tag" style="background:${icoBg};color:${icoFg};">${cart.nome}</span>`:''}
+        </div>
       </div>`;
     });
 
@@ -2367,6 +2391,10 @@ function nomeCateg(id){
   if(!id)return null;
   const ct=S.categorias.find(x=>x.id===id);
   return ct?`${ct.emoji} ${ct.nome}`:null;
+}
+function catEmoji(id,fallback){
+  const ct=id?S.categorias.find(x=>x.id===id):null;
+  return (ct&&ct.emoji)?ct.emoji:fallback;
 }
 function gerenciarCategorias(){
   if(!S.categorias.length){dlgInfo('Categorias','Você ainda não tem categorias.');return;}
