@@ -585,6 +585,12 @@ body:not(.claro) .btn-salv,body:not(.claro) .btn-add{
   box-shadow:0 8px 22px -8px rgba(45,212,126,.55),inset 0 1px 0 rgba(255,255,255,.4);
 }
 body:not(.claro) .btn-salv:active,body:not(.claro) .btn-add:active{box-shadow:0 4px 12px -6px rgba(45,212,126,.5);}
+body.claro .btn-salv,body.claro .btn-add{
+  border-style:solid!important;border-color:transparent!important;
+  background:linear-gradient(180deg,#22e08a,#16a34a 58%,#128a3e)!important;color:#ffffff!important;
+  box-shadow:0 8px 20px -8px rgba(22,163,74,.45);
+}
+body.claro .btn-salv:active,body.claro .btn-add:active{box-shadow:0 4px 10px -6px rgba(22,163,74,.4);}
 body:not(.claro) .tl-body.hoje{border-color:transparent!important;box-shadow:0 0 0 1.5px var(--v),0 12px 36px -14px rgba(45,212,126,.5),inset 0 1px 0 rgba(255,255,255,.05);}
 body:not(.claro) .tl-dot.hj{box-shadow:0 0 0 4px rgba(45,212,126,.16),0 0 14px rgba(45,212,126,.65);}
 body:not(.claro) .tl-chip-hoje{box-shadow:0 2px 10px -2px rgba(45,212,126,.6);}
@@ -728,7 +734,7 @@ body:not(.claro) .fx-check.on{box-shadow:0 0 12px -2px rgba(45,212,126,.55);}
           <div style="flex:1;"><div style="font-size:14px;color:var(--ts);">Sair</div></div>
         </div>
       </div>
-      <div style="text-align:center;font-size:11px;color:var(--ts);margin:18px 0 6px;">SobraAí <strong>v5.2</strong></div>
+      <div style="text-align:center;font-size:11px;color:var(--ts);margin:18px 0 6px;">SobraAí <strong>v5.3</strong></div>
     </div>
   </div>
   <div class="rodape" id="rodape-saldo">
@@ -815,6 +821,12 @@ const $=id=>document.getElementById(id);
 const CORES_BANCO=['#820ad1','#0070e0','#16a34a','#f59e0b','#ef4444','#ec4899','#06b6d4','#71717a'];
 function inicialBanco(nome){return (nome||'?').trim().charAt(0).toUpperCase()||'?';}
 function corBanco(cart){return (cart&&cart.cor)||'#71717a';}
+function corTint(hex,alpha){
+  hex=(hex||'#71717a').replace('#','');
+  if(hex.length===3)hex=hex.split('').map(c=>c+c).join('');
+  const r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
 // Letra do badge: usa a letra personalizada se houver, senão a inicial do nome
 function letraBanco(cart){
   if(cart&&cart.letra&&String(cart.letra).trim())return String(cart.letra).trim().slice(0,2).toUpperCase();
@@ -1680,8 +1692,9 @@ function render(){
         <div class="tl-itens" id="tl-itens-${d}" style="display:none;">`;
 
     dFaturas.forEach(fat=>{
-      h+=`<div class="tl-item" style="border-left-color:#378add;" onclick="event.stopPropagation();verFatura('${fat.cartao.id}',${fat.mes},${fat.ano})">
-        <div class="tl-ic" style="background:var(--chip2);color:#7dc4ff;">💳</div>
+      const corC=corBanco(fat.cartao);
+      h+=`<div class="tl-item" style="border-left-color:${corC};" onclick="event.stopPropagation();verFatura('${fat.cartao.id}',${fat.mes},${fat.ano})">
+        <div class="tl-ic" style="background:${corTint(corC,.16)};color:${corC};">💳</div>
         <div class="tl-item-info">
           <div class="tl-item-nome">Fatura ${fat.cartao.nome}</div>
           <div class="tl-item-sub">Toque para ver detalhes</div>
@@ -1696,12 +1709,10 @@ function render(){
       const isAssin=!!cp.recorrente;
       const parcTag=(!isAssin&&cp.parcelas>1)?`<span class="tl-tag">${cp.parcela_atual}/${cp.parcelas}</span>`:'';
       const ico=isAssin?'🔁':'💳';
-      const icoBg=isAssin?'var(--chip1)':'var(--chip2)';
-      const icoFg=isAssin?'#ffb447':'#7dc4ff';
-      const borda=isAssin?'#ffb447':'#378add';
+      const corC=corBanco(cart);
       const bancoNome=cart?cart.nome:'Cartão';
-      h+=`<div class="tl-item" style="border-left-color:${borda};" onclick="event.stopPropagation();abreCompra('${cp.id}')">
-        <div class="tl-ic" style="background:${icoBg};color:${icoFg};">${ico}</div>
+      h+=`<div class="tl-item" style="border-left-color:${corC};" onclick="event.stopPropagation();abreCompra('${cp.id}')">
+        <div class="tl-ic" style="background:${corTint(corC,.16)};color:${corC};">${ico}</div>
         <div class="tl-item-info">
           <div class="tl-item-nome">${cp.descricao}${parcTag}</div>
           ${cat?`<div class="tl-item-sub">${cat}</div>`:''}
@@ -1709,7 +1720,7 @@ function render(){
         </div>
         <div class="tl-val-wrap">
           <div class="tl-item-val info">-R$${brl(cp.valor)}</div>
-          <span class="tl-banco-tag" style="background:${icoBg};color:${icoFg};">${bancoNome}</span>
+          <span class="tl-banco-tag" style="background:${corTint(corC,.16)};color:${corC};">${bancoNome}</span>
         </div>
       </div>`;
     });
@@ -1718,7 +1729,7 @@ function render(){
       const isEnt=f.tipo==='entrada';
       const cart=S.carteiras.find(c=>c.id===f.carteira_id);
       const mesesDesde=(a-f.ano_inicio)*12+(m+1-f.mes_inicio);
-      const tag=f.parcelas?`<span class="tl-tag">${mesesDesde+1}/${f.parcelas}</span>`:'';
+      const tag=f.parcelas?`<span class="tl-tag">${mesesDesde+1}/${f.parcelas}</span>`:`<span class="tl-tag">conta fixa</span>`;
       const pago=!!f._pago;
       const vEff=fixoValEff(f);
       const mostraCheck=!isFut;
@@ -1728,19 +1739,21 @@ function render(){
       else if(venceuSemPagar)sub.push('⚠️ a confirmar');
       else if(mostraCheck)sub.push(isEnt?'a receber':'a pagar');
       const subTxt=sub.join(' · ');
+      const subCls=(!pago&&!venceuSemPagar&&mostraCheck)?(isEnt?' style="color:var(--v);font-weight:600;"':' style="color:var(--r);font-weight:600;"'):'';
       const check=mostraCheck?`<button class="fx-check ${pago?'on':''}" onclick="event.stopPropagation();${pago?`desmarcarFixo('${f.id}',${m+1},${a})`:`pagarFixo('${f.id}',${m+1},${a})`}">${pago?'✓':''}</button>`:'';
       const ico=catEmoji(f.categoria_id,isEnt?'💰':'🧾');
-      h+=`<div class="tl-item${venceuSemPagar?' fx-vencido':''}" style="border-left-color:#6b7280;">
+      const corC=corBanco(cart);
+      h+=`<div class="tl-item${venceuSemPagar?' fx-vencido':''}" style="border-left-color:${corC};">
         ${(!pago&&!f.parcelas)?`<span class="tl-grip" data-drag="f:${f.id}" onclick="event.stopPropagation()">⠿</span>`:''}
         ${check}
-        <div class="tl-ic" style="background:var(--bg3);color:var(--tm);" onclick="event.stopPropagation();abreFixo('${f.id}')">${ico}</div>
+        <div class="tl-ic" style="background:${corTint(corC,.16)};color:${corC};" onclick="event.stopPropagation();abreFixo('${f.id}')">${ico}</div>
         <div class="tl-item-info" onclick="event.stopPropagation();abreFixo('${f.id}')">
           <div class="tl-item-nome">${f.descricao}${tag}</div>
-          ${subTxt?`<div class="tl-item-sub">${subTxt}</div>`:''}
+          ${subTxt?`<div class="tl-item-sub"${subCls}>${subTxt}</div>`:''}
         </div>
         <div class="tl-val-wrap" onclick="event.stopPropagation();abreFixo('${f.id}')">
           <div class="tl-item-val ${isEnt?'pos':'neg'}">${isEnt?'+':'-'}R$${brl(vEff)}</div>
-          ${cart?`<span class="tl-banco-tag" style="background:var(--bg3);color:var(--tm);">${cart.nome}</span>`:''}
+          ${cart?`<span class="tl-banco-tag" style="background:${corTint(corC,.16)};color:${corC};">${cart.nome}</span>`:''}
         </div>
       </div>`;
     });
@@ -1752,19 +1765,17 @@ function render(){
       const cat=nomeCateg(l.categoria_id);
       const valCls=benef?'benef':(isEnt?'pos':'neg');
       const ico=benef?'🍽️':catEmoji(l.categoria_id,isEnt?'💰':'💸');
-      const icoBg=benef?'var(--vg)':'var(--bg3)';
-      const icoFg=benef?'var(--v)':'var(--tm)';
-      const borda=benef?'var(--v)':'#6b7280';
-      h+=`<div class="tl-item" style="border-left-color:${borda};" onclick="event.stopPropagation();abreLanc(${d},'${l.id}')">
+      const corC=corBanco(cart);
+      h+=`<div class="tl-item" style="border-left-color:${corC};" onclick="event.stopPropagation();abreLanc(${d},'${l.id}')">
         <span class="tl-grip" data-drag="l:${l.id}" onclick="event.stopPropagation()">⠿</span>
-        <div class="tl-ic" style="background:${icoBg};color:${icoFg};">${ico}</div>
+        <div class="tl-ic" style="background:${corTint(corC,.16)};color:${corC};">${ico}</div>
         <div class="tl-item-info">
           <div class="tl-item-nome">${l.descricao}</div>
           ${cat?`<div class="tl-item-sub">${cat}</div>`:''}
         </div>
         <div class="tl-val-wrap">
           <div class="tl-item-val ${valCls}">${isEnt?'+':'-'}R$${brl(l.valor)}</div>
-          ${cart?`<span class="tl-banco-tag" style="background:${icoBg};color:${icoFg};">${cart.nome}</span>`:''}
+          ${cart?`<span class="tl-banco-tag" style="background:${corTint(corC,.16)};color:${corC};">${cart.nome}</span>`:''}
         </div>
       </div>`;
     });
@@ -3085,7 +3096,7 @@ function renderCartoes(){
         </div>
       </div>`;
     });
-    h+='<div onclick="novoCartao()" style="text-align:center;font-size:12px;color:var(--ts);padding:6px 0 2px;cursor:pointer;">+ adicionar cartão</div>';
+    h+='<button class="btn-add" onclick="novoCartao()">+ Adicionar cartão de crédito</button>';
   }
   // ── Cartões de benefício (VR/VA) ──
   const benefs=S.carteiras.filter(c=>c.beneficio);
@@ -3110,7 +3121,7 @@ function renderCartoes(){
         ${recAtiva?`<button onclick="event.stopPropagation();abreRecarga('${c.id}','antecipar')" style="width:100%;margin-top:11px;border:none;border-radius:10px;padding:9px;background:var(--vg);color:var(--v);font-size:12px;font-weight:700;">Caiu a recarga</button>`:''}
       </div>`;
     });
-    h+='<div onclick="novoBeneficio()" style="text-align:center;font-size:12px;color:var(--ts);padding:6px 0 0;cursor:pointer;">+ adicionar benefício</div>';
+    h+='<button class="btn-add" onclick="novoBeneficio()">+ Adicionar benefício (VR / VA)</button>';
   }
   h+='</div>';
   el.innerHTML=h;
@@ -3280,10 +3291,10 @@ function renderFaturaDetalhe(){
     h+=`<div style="background:var(--vg);border:0.5px solid rgba(45,212,126,.3);border-radius:10px;padding:10px 12px;font-size:12.5px;font-weight:600;color:var(--v);margin-bottom:8px;">✓ Fatura paga — o pagamento está no calendário como lançamento</div>`;
     h+=`<button onclick="desfazerPagamento('${cartaoId}',${mes},${ano})" style="background:transparent;border:1px solid var(--bd);border-radius:10px;padding:10px;width:100%;color:var(--ts);font-size:12px;margin-bottom:8px;">Desfazer pagamento</button>`;
   } else {
-    if(vTotal>0)h+=`<button onclick="pagarFatura('${cartaoId}',${mes},${ano})" style="background:var(--v);border-radius:10px;padding:12px;width:100%;color:var(--onv);font-size:14px;font-weight:700;margin-bottom:8px;">💸 Pagar fatura</button>`;
-    if(vTotal>0)h+=`<button onclick="adiarFatura('${cartaoId}',${mes},${ano})" style="background:var(--bg3);border-radius:10px;padding:10px;width:100%;color:var(--tm);font-size:13px;font-weight:600;margin-bottom:8px;">📅 Adiar p/ outro mês</button>`;
+    if(vTotal>0)h+=`<button onclick="pagarFatura('${cartaoId}',${mes},${ano})" style="background:var(--v);border-radius:10px;padding:12px;width:100%;color:var(--onv);font-size:14px;font-weight:700;margin-bottom:8px;">Pagar fatura</button>`;
+    if(vTotal>0)h+=`<button onclick="adiarFatura('${cartaoId}',${mes},${ano})" style="background:var(--bg3);border-radius:10px;padding:10px;width:100%;color:var(--tm);font-size:13px;font-weight:600;margin-bottom:8px;">Adiar para outro mês</button>`;
     if(edit)h+=`<div style="font-size:11px;color:#fbbf24;margin-bottom:8px;">⚠ Valor editado manualmente (compras somam R$ ${brl(comprasFat.reduce((s,c)=>s+parseFloat(c.valor),0))})</div>`;
-    h+=`<button onclick="editarValorFatura('${cartaoId}',${mes},${ano})" style="background:var(--bg3);border-radius:10px;padding:10px;width:100%;color:var(--tm);font-size:13px;font-weight:600;margin-bottom:8px;">✏️ Editar valor da fatura</button>`;
+    h+=`<button onclick="editarValorFatura('${cartaoId}',${mes},${ano})" style="background:var(--bg3);border-radius:10px;padding:10px;width:100%;color:var(--tm);font-size:13px;font-weight:600;margin-bottom:8px;">Editar valor da fatura</button>`;
     if(edit)h+=`<button onclick="resetarFatura('${cartaoId}',${mes},${ano})" style="background:transparent;border:1px solid var(--bd);border-radius:10px;padding:10px;width:100%;color:var(--ts);font-size:12px;margin-bottom:8px;">Voltar ao valor automático</button>`;
   }
   h+=`<div style="font-size:12px;font-weight:700;color:var(--ts);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 8px;">Compras (${comprasFat.length})</div>`;
